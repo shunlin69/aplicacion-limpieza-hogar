@@ -6,6 +6,7 @@ import { HogarCard } from './HogarCard'
 import { InvitarCard } from './InvitarCard'
 import { NotificacionesCard } from './NotificacionesCard'
 import { PerfilCard } from './PerfilCard'
+import { RotacionCard } from './RotacionCard'
 
 export function AjustesPage() {
   const { isAdmin, session } = useApp()
@@ -22,6 +23,7 @@ export function AjustesPage() {
       <PerfilCard />
       <NotificacionesCard />
       <HogarCard />
+      <RotacionCard />
       {isAdmin && <InvitarCard />}
       <section className="card stack">
         <h2>🎨 Apariencia</h2>

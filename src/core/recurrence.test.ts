@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { WEEKDAY_NAMES } from './dates'
-import { describeRecurrence, nextOccurrence, occurrencesBetween, occursOn, type Recurrence } from './recurrence'
+import { WEEKDAY_NAMES } from './dates.ts'
+import { describeRecurrence, nextOccurrence, occurrencesBetween, occursOn, type Recurrence } from './recurrence.ts'
 
 const lmv: Recurrence = { kind: 'weekly', weekdays: [1, 3, 5] }
 

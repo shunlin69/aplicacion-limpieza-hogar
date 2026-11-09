@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { codeFromInput, inviteLink, isValidInviteCode, normalizeInviteCode } from './invite'
+import { codeFromInput, inviteLink, isValidInviteCode, normalizeInviteCode } from './invite.ts'
 
 describe('códigos de invitación', () => {
   it('normaliza minúsculas, espacios y guiones', () => {

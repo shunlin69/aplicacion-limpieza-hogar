@@ -58,10 +58,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return
     }
     const [{ data: h }, { data: ms }] = await Promise.all([
-      supabase.from('households').select('id, name, timezone').eq('id', householdId).single(),
+      supabase.from('households').select('id, name, timezone, rotation_start').eq('id', householdId).single(),
       supabase
         .from('household_members')
-        .select('id, household_id, user_id, role, participates, reminder_time, profile:profiles!household_members_user_id_profiles_fkey(id, display_name, avatar, color)')
+        .select('id, household_id, user_id, role, participates, reminder_time, rotation_order, profile:profiles!household_members_user_id_profiles_fkey(id, display_name, avatar, color)')
         .eq('household_id', householdId)
         .order('joined_at'),
     ])
@@ -77,17 +77,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [authReady, refresh])
 
   // Tiempo real: cambios en integrantes o perfiles del hogar
+  const householdId = household?.id
   useEffect(() => {
-    if (!household) return
+    if (!householdId) return
     const channel = supabase
-      .channel(`hogar-${household.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'household_members', filter: `household_id=eq.${household.id}` }, () => void refresh())
+      .channel(`hogar-${householdId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'household_members', filter: `household_id=eq.${householdId}` }, () => void refresh())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => void refresh())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'households', filter: `id=eq.${householdId}` }, () => void refresh())
       .subscribe()
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [household, refresh])
+  }, [householdId, refresh])
 
   const value = useMemo<AppState>(() => {
     const me = members.find((m) => m.user_id === userId) ?? null

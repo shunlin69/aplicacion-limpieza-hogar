@@ -67,7 +67,7 @@ export function useCatalog(householdId: string | undefined) {
     void load()
     if (!householdId) return
     const filter = `household_id=eq.${householdId}`
-    const ch = supabase.channel(`catalogo-${householdId}`)
+    const ch = supabase.channel(`catalogo-${householdId}-${crypto.randomUUID()}`)
     for (const table of ['spaces', 'space_checklist_items', 'shift_templates', 'shift_template_spaces']) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table, filter }, () => void load())
     }

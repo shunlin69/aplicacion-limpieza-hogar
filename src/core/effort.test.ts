@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shiftMinutes, shiftPoints, shiftWeight } from './effort'
+import { shiftMinutes, shiftPoints, shiftWeight } from './effort.ts'
 
 const cocina = { difficulty: 3, minutes: 40 }
 const bano = { difficulty: 3, minutes: 30 }

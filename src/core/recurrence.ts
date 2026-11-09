@@ -1,5 +1,5 @@
 // Cálculo de fechas según la frecuencia de un turno
-import { addDays, daysBetween, isoWeekday, type IsoWeekday, type LocalDate } from './dates'
+import { addDays, daysBetween, isoWeekday, type IsoWeekday, type LocalDate } from './dates.ts'
 
 export type Recurrence =
   | { kind: 'weekly'; weekdays: IsoWeekday[] } // ej: lunes, miércoles y viernes

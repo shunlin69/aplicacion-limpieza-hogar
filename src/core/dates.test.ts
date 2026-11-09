@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, daysBetween, endOfLocalDay, isoWeekday, localDateOf, localTimeOnDay, startOfLocalDay, weekDays, weekStart } from './dates'
+import { addDays, daysBetween, endOfLocalDay, isoWeekday, localDateOf, localTimeOnDay, startOfLocalDay, weekDays, weekStart } from './dates.ts'
 
 const TZ = 'America/Santiago'
 const hours = (a: Date, b: Date) => (b.getTime() - a.getTime()) / 3_600_000

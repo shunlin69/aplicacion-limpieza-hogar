@@ -18,6 +18,7 @@ export interface Household {
   id: string
   name: string
   timezone: string
+  rotation_start: string | null // lunes en que parte la rotación
 }
 
 export interface Member {
@@ -27,5 +28,6 @@ export interface Member {
   role: MemberRole
   participates: boolean
   reminder_time: string
+  rotation_order: number | null
   profile: Profile
 }
