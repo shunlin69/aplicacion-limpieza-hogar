@@ -98,6 +98,7 @@ export function OnboardingScreen({ inviteCode, onDone }: { inviteCode?: string; 
               </button>
             </div>
           </div>
+          <div className="alert alert-info small">¿Tu familia ya usa Casa Limpia? No crees otro hogar: pide el código de invitación a un admin.</div>
           <p className="small muted">Serás administrador: podrás invitar a la familia y configurar los turnos.</p>
           {error && <div className="alert alert-error">{error}</div>}
           <button className="btn btn-block" disabled={busy}>
