@@ -1,4 +1,5 @@
 // Tarjeta de un turno: quién, qué espacios, puntos y por qué le tocó
+import type { ReactNode } from 'react'
 import { pointsForStatus } from '../core/completion'
 import type { WeekShift } from '../hooks/useWeek'
 import type { Member } from '../lib/supabase'
@@ -25,9 +26,10 @@ interface Props {
   compact?: boolean
   checked?: string[] // ítems ya marcados (progreso en vivo)
   late?: boolean // pendiente y ya pasó su día
+  footer?: ReactNode // acciones extra (ej: pedir cambio)
 }
 
-export function ShiftCard({ shift, members, meId, compact, checked = [], late }: Props) {
+export function ShiftCard({ shift, members, meId, compact, checked = [], late, footer }: Props) {
   const who = members.find((m) => m.id === shift.memberId)
   const orig = members.find((m) => m.id === shift.originalMemberId)
   const reason = REASON_TEXT[shift.reason]?.(orig?.profile.display_name ?? 'otro')
@@ -78,6 +80,7 @@ export function ShiftCard({ shift, members, meId, compact, checked = [], late }:
           {status && <span className={`badge ${status.cls}`}>{status.text}</span>}
         </div>
       )}
+      {footer && <div className="row" style={{ justifyContent: 'flex-end' }}>{footer}</div>}
     </div>
   )
 }

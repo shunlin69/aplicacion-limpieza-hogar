@@ -41,6 +41,12 @@ export function Historial({ members, ledger, results, activity, thisMonday, time
       case 'semana_repartida': return { icon: '📅', msg: `Se repartió la semana ${p.numero ?? ''} (desde el ${dayName(p.semana)})` }
       case 'semana_recalculada': return { icon: '🔁', msg: `${byUser(a.actorUserId)} recalculó la semana del ${dayName(p.semana)}` }
       case 'sorteo_rotacion': return { icon: '🎲', msg: `${byUser(a.actorUserId)} sorteó el orden: ${Array.isArray(p.orden) ? p.orden.join(', ') : ''}` }
+      case 'cambio_pedido': return { icon: '🔄', msg: `${byMember(p.integrante)} pidió ${p.fecha_otro ? `cambiar su turno del ${dayName(p.fecha)} con ${byMember(p.otro)}` : `que ${byMember(p.otro)} lo cubra el ${dayName(p.fecha)}`}` }
+      case 'cambio_aceptado': return { icon: '🤝', msg: `${byMember(p.otro)} aceptó el cambio con ${byMember(p.integrante)}` }
+      case 'cambio_rechazado': return { icon: '🙅', msg: `${byMember(p.otro)} no aceptó el cambio con ${byMember(p.integrante)}` }
+      case 'cambio_aprobado': return { icon: '👍', msg: `${byUser(a.actorUserId)} aprobó el cambio entre ${byMember(p.integrante)} y ${byMember(p.otro)}` }
+      case 'cambio_no_aprobado': return { icon: '⛔', msg: `${byUser(a.actorUserId)} no aprobó el cambio entre ${byMember(p.integrante)} y ${byMember(p.otro)}` }
+      case 'cambio_cancelado': return { icon: '✖️', msg: `${byMember(p.integrante)} canceló su pedido de cambio` }
       default: return { icon: '•', msg: a.verb }
     }
   }

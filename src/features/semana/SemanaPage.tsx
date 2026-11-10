@@ -7,6 +7,8 @@ import { shiftPhase } from '../../core/completion'
 import { useApp } from '../../state/AppState'
 import { Avatar } from '../../ui/Avatar'
 import { ShiftCard } from '../../ui/ShiftCard'
+import { BotonCambio } from '../cambios/BotonCambio'
+import { useSwaps } from '../../hooks/useSwaps'
 
 const fmtDay = (d: string) => new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
 
@@ -17,6 +19,7 @@ export function SemanaPage() {
   const [week, setWeek] = useState(() => weekStartOf(today))
   const { shifts, checks, cutoffOf, isProjection, debts, absences, loading } = useWeek(household, members, week)
 
+  const { swaps } = useSwaps(household)
   const name = (id: string) => members.find((m) => m.id === id)?.profile.display_name ?? 'alguien'
   const participants = members.filter((m) => m.participates)
   const resting = participants.filter((m) => !shifts.some((s) => s.memberId === m.id))
@@ -63,7 +66,7 @@ export function SemanaPage() {
                   <b>{WEEKDAY_NAMES[isoWeekday(d)]}</b> <span className="muted small">{fmtDay(d)}</span>
                   {isToday && <span className="badge badge-me">Hoy</span>}
                 </div>
-                {dayShifts.length ? dayShifts.map((s) => <ShiftCard key={s.templateId + s.date} shift={s} members={members} meId={me?.id} compact checked={(s.id && checks[s.id]) || []} late={s.status === 'pending' && shiftPhase(today, s.date, cutoffOf(s.date)) === 'late'} />) : <span className="small muted">Sin turno</span>}
+                {dayShifts.length ? dayShifts.map((s) => <ShiftCard key={s.templateId + s.date} shift={s} members={members} meId={me?.id} compact checked={(s.id && checks[s.id]) || []} late={s.status === 'pending' && shiftPhase(today, s.date, cutoffOf(s.date)) === 'late'} footer={s.id && s.memberId === me?.id && s.status === 'pending' && s.date >= today ? <BotonCambio shift={s} swaps={swaps} today={today} /> : undefined} />) : <span className="small muted">Sin turno</span>}
               </section>
             )
           })}

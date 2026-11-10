@@ -5,6 +5,9 @@ import { useApp } from '../../state/AppState'
 import { Avatar } from '../../ui/Avatar'
 import { ShiftCard } from '../../ui/ShiftCard'
 import { TurnoActivo } from './TurnoActivo'
+import { useSwaps } from '../../hooks/useSwaps'
+import { BotonCambio } from '../cambios/BotonCambio'
+import { SolicitudesCard } from '../cambios/SolicitudesCard'
 
 const saludo = (h: number) => (h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches')
 const fmtLong = (d: string) => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
@@ -27,6 +30,12 @@ export function HoyPage() {
   )
   const myNext = all.find((s) => s.memberId === me?.id && s.date > today)
   const loading = thisWeek.loading || nextWeek.loading
+  const { swaps, reload: reloadSwaps } = useSwaps(household)
+  const refreshAll = () => {
+    void reloadSwaps()
+    void thisWeek.reload()
+    void nextWeek.reload()
+  }
 
   return (
     <div className="page">
@@ -39,6 +48,8 @@ export function HoyPage() {
         </div>
         {profile && <Avatar profile={profile} large />}
       </div>
+
+      {me && <SolicitudesCard swaps={swaps} members={members} me={me} onChanged={refreshAll} />}
 
       {!household?.rotation_start ? (
         <div className="card card-hero stack">
@@ -80,6 +91,11 @@ export function HoyPage() {
                   </span>
                 ))}
               </div>
+              {myNext.id && (
+                <div className="row" style={{ justifyContent: 'flex-end' }}>
+                  <BotonCambio shift={myNext} swaps={swaps} today={today} />
+                </div>
+              )}
             </div>
           )}
 

@@ -169,8 +169,9 @@ async function regenerateWeek(h: Household, week: LocalDate) {
   )
   if (!existing.length) return generateWeek(h, week)
 
-  // Deshace las deudas que nacieron o se pagaron esta semana para volver a calcularlas
-  await q(db.from('rotation_debts').delete().eq('household_id', h.id).eq('origin_week', week))
+  // Deshace las deudas por ausencia que nacieron o se pagaron esta semana para volver a calcularlas
+  // (las de intercambios aprobados se conservan)
+  await q(db.from('rotation_debts').delete().eq('household_id', h.id).eq('origin_week', week).eq('source', 'ausencia'))
   await q(db.from('rotation_debts').update({ settled_shift_id: null, settled_week: null }).eq('household_id', h.id).eq('settled_week', week))
 
   const ctx = await loadContext(h, week)
