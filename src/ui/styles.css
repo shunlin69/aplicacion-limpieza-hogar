@@ -317,3 +317,25 @@ select.input { appearance: none; }
 }
 @keyframes fall { to { transform: translate(var(--x), 105vh) rotate(var(--r)); opacity: 0.9; } }
 .status-pending-late { background: color-mix(in srgb, var(--peach) 70%, var(--surface)); color: var(--text); }
+
+/* ---------- Fase 5: ranking, premios e historial ---------- */
+.rank-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rank-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; }
+.rank-row + .rank-row { border-top: 1px solid var(--border); }
+.rank-first { background: color-mix(in srgb, var(--lemon) 40%, var(--surface)); border-radius: 16px; padding: 10px 10px; }
+.rank-me .member-name { color: var(--primary); }
+.rank-pos { width: 28px; text-align: center; font-size: 22px; font-weight: 900; color: var(--muted); flex-shrink: 0; }
+.rank-info { flex: 1; min-width: 0; }
+.rank-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.rank-points { font-size: 24px; font-weight: 900; }
+.rank-points.neg { color: var(--danger); }
+.reward { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.reward-person { display: flex; align-items: center; gap: 10px; }
+.reward-person .avatar { width: 34px; height: 34px; font-size: 18px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.summary-grid div { background: var(--surface-2); border-radius: 14px; padding: 10px 4px; display: flex; flex-direction: column; }
+.summary-grid b { font-size: 22px; font-weight: 900; }
+.summary-grid span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.feed li { display: flex; gap: 10px; align-items: flex-start; }
+.feed-icon { width: 32px; height: 32px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; flex-shrink: 0; }
