@@ -1,6 +1,7 @@
 // Turnos de una semana. Si la semana aún no se reparte en el servidor,
 // se muestra una PROYECCIÓN calculada con el mismo algoritmo.
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { missedCutoff } from '../core/completion'
 import { addDays, type LocalDate } from '../core/dates'
 import { shiftPoints, shiftWeight, type SpaceEffort } from '../core/effort'
 import { planWeek, type AssignmentReason, type OpenDebt } from '../core/rotation'
@@ -25,6 +26,7 @@ export interface WeekShift {
   status: 'pending' | 'done' | 'late_done' | 'missed'
   points: number
   spaces: SnapshotSpace[]
+  completedAt?: string | null
 }
 
 export interface Debt {
@@ -48,20 +50,27 @@ export function useWeek(household: Household | null, members: Member[], weekStar
   const [debts, setDebts] = useState<Debt[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
   const [loading, setLoading] = useState(true)
+  // Ítems marcados de cada turno: shiftId -> ids de ítems
+  const [checks, setChecks] = useState<Record<string, string[]>>({})
 
   const load = useCallback(async () => {
     if (!household) return
     const [s, d, a] = await Promise.all([
-      supabase.from('shifts').select('id, template_id, date, assigned_member_id, original_member_id, reason, status, points, snapshot').eq('household_id', household.id).eq('week_start', weekStart).order('date'),
+      supabase.from('shifts').select('id, template_id, date, assigned_member_id, original_member_id, reason, status, points, snapshot, completed_at').eq('household_id', household.id).eq('week_start', weekStart).order('date'),
       supabase.from('rotation_debts').select('id, debtor_member_id, creditor_member_id, origin_week, settled_week').eq('household_id', household.id).order('created_at'),
       supabase.from('member_unavailability').select('id, member_id, week_start, reason').eq('household_id', household.id).gte('week_start', addDays(weekStart, -7 * 8)),
     ])
-    const shifts = (s.data ?? []) as { id: string; template_id: string; date: string; assigned_member_id: string | null; original_member_id: string | null; reason: WeekShift['reason']; status: WeekShift['status']; points: number; snapshot: { spaces?: SnapshotSpace[] } }[]
+    const shifts = (s.data ?? []) as { id: string; template_id: string; date: string; assigned_member_id: string | null; original_member_id: string | null; reason: WeekShift['reason']; status: WeekShift['status']; points: number; snapshot: { spaces?: SnapshotSpace[] }; completed_at: string | null }[]
+    const ids = shifts.map((r) => r.id)
+    const c = ids.length ? await supabase.from('shift_checks').select('shift_id, item_id').in('shift_id', ids).eq('checked', true) : { data: [] }
+    const map: Record<string, string[]> = {}
+    for (const x of (c.data ?? []) as { shift_id: string; item_id: string }[]) (map[x.shift_id] ??= []).push(x.item_id)
+    setChecks(map)
     setRows(
       shifts.length
         ? shifts.map((r) => ({
             id: r.id, templateId: r.template_id, templateName: '', date: r.date, memberId: r.assigned_member_id,
-            originalMemberId: r.original_member_id, reason: r.reason, status: r.status, points: r.points, spaces: r.snapshot.spaces ?? [],
+            originalMemberId: r.original_member_id, reason: r.reason, status: r.status, points: r.points, spaces: r.snapshot.spaces ?? [], completedAt: r.completed_at,
           }))
         : null,
     )
@@ -78,7 +87,7 @@ export function useWeek(household: Household | null, members: Member[], weekStar
     if (!household) return
     const filter = `household_id=eq.${household.id}`
     const ch = supabase.channel(`semana-${household.id}-${weekStart}-${crypto.randomUUID()}`)
-    for (const table of ['shifts', 'rotation_debts', 'member_unavailability']) ch.on('postgres_changes', { event: '*', schema: 'public', table, filter }, () => void load())
+    for (const table of ['shifts', 'rotation_debts', 'member_unavailability', 'shift_checks']) ch.on('postgres_changes', { event: '*', schema: 'public', table, filter }, () => void load())
     ch.subscribe()
     return () => {
       void supabase.removeChannel(ch)
@@ -113,5 +122,8 @@ export function useWeek(household: Household | null, members: Member[], weekStar
     return list.map((s) => ({ ...s, templateName: s.templateName || catalog.templates.find((t) => t.id === s.templateId)?.name || 'Turno' }))
   }, [rows, projection, catalog.templates])
 
-  return { shifts, isProjection: !rows && !!projection, debts, absences, loading: loading || catalog.loading, reload: load }
+  // Día en que un turno pendiente pasa a "no hecho" (siguiente turno de la casa)
+  const cutoffOf = useCallback((date: LocalDate) => missedCutoff(date, catalog.templates.map(templateRule)), [catalog.templates])
+
+  return { shifts, checks, cutoffOf, isProjection: !rows && !!projection, debts, absences, loading: loading || catalog.loading, reload: load }
 }

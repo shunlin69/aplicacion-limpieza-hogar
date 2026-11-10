@@ -1,4 +1,5 @@
 // Tarjeta de un turno: quién, qué espacios, puntos y por qué le tocó
+import { pointsForStatus } from '../core/completion'
 import type { WeekShift } from '../hooks/useWeek'
 import type { Member } from '../lib/supabase'
 import { Avatar } from './Avatar'
@@ -17,11 +18,28 @@ const STATUS: Record<WeekShift['status'], { text: string; cls: string } | null> 
   missed: { text: 'No hecho', cls: 'status-missed' },
 }
 
-export function ShiftCard({ shift, members, meId, compact }: { shift: WeekShift; members: Member[]; meId?: string; compact?: boolean }) {
+interface Props {
+  shift: WeekShift
+  members: Member[]
+  meId?: string
+  compact?: boolean
+  checked?: string[] // ítems ya marcados (progreso en vivo)
+  late?: boolean // pendiente y ya pasó su día
+}
+
+export function ShiftCard({ shift, members, meId, compact, checked = [], late }: Props) {
   const who = members.find((m) => m.id === shift.memberId)
   const orig = members.find((m) => m.id === shift.originalMemberId)
   const reason = REASON_TEXT[shift.reason]?.(orig?.profile.display_name ?? 'otro')
-  const status = STATUS[shift.status]
+  const base = STATUS[shift.status]
+  const earned = pointsForStatus(shift.status, shift.points)
+  const status = base
+    ? { ...base, text: `${base.text} ${earned > 0 ? '+' : ''}${earned}` }
+    : late
+      ? { text: 'Atrasado ⏰', cls: 'status-pending-late' }
+      : null
+  const total = shift.spaces.reduce((n, sp) => n + (sp.items?.length ?? 0), 0)
+  const progress = shift.status === 'pending' && checked.length > 0 && total > 0 ? checked.length / total : null
   const mine = !!meId && shift.memberId === meId
   return (
     <div className={`shift${mine ? ' shift-mine' : ''}`}>
@@ -44,6 +62,16 @@ export function ShiftCard({ shift, members, meId, compact }: { shift: WeekShift;
           </span>
         ))}
       </div>
+      {progress !== null && (
+        <div className="stack" style={{ gap: 4 }}>
+          <span className="small muted">
+            Limpiando… {checked.length} de {total}
+          </span>
+          <div className="progress">
+            <span style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
+      )}
       {(reason || status) && (
         <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
           {reason && <span className="badge badge-info">{reason}</span>}

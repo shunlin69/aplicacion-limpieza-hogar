@@ -1,8 +1,10 @@
+import { shiftPhase } from '../../core/completion'
 import { addDays, isoWeekday, localDateOf, WEEKDAY_NAMES, weekStart } from '../../core/dates'
 import { useWeek } from '../../hooks/useWeek'
 import { useApp } from '../../state/AppState'
 import { Avatar } from '../../ui/Avatar'
 import { ShiftCard } from '../../ui/ShiftCard'
+import { TurnoActivo } from './TurnoActivo'
 
 const saludo = (h: number) => (h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches')
 const fmtLong = (d: string) => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
@@ -19,7 +21,10 @@ export function HoyPage() {
   const fecha = raw.charAt(0).toUpperCase() + raw.slice(1)
   const all = [...thisWeek.shifts, ...nextWeek.shifts]
   const todayShifts = all.filter((s) => s.date === today)
-  const mineToday = todayShifts.filter((s) => s.memberId === me?.id)
+  // Mis turnos para hoy, más los atrasados que aún están en plazo
+  const mineToday = thisWeek.shifts.filter(
+    (s) => s.memberId === me?.id && (s.date === today || (s.status === 'pending' && shiftPhase(today, s.date, thisWeek.cutoffOf(s.date)) === 'late')),
+  )
   const myNext = all.find((s) => s.memberId === me?.id && s.date > today)
   const loading = thisWeek.loading || nextWeek.loading
 
@@ -45,13 +50,16 @@ export function HoyPage() {
       ) : (
         <>
           {mineToday.length > 0 ? (
-            <div className="card card-hero stack">
-              <h2 style={{ marginBottom: 0 }}>🧽 ¡Hoy te toca!</h2>
-              {mineToday.map((s) => (
-                <ShiftCard key={s.templateId} shift={s} members={members} meId={me?.id} />
-              ))}
-              <p className="small">Pronto podrás marcar cada parte como hecha desde aquí.</p>
-            </div>
+            mineToday.map((s) => (
+              <TurnoActivo
+                key={s.id ?? s.templateId + s.date}
+                shift={s}
+                checked={(s.id && thisWeek.checks[s.id]) || []}
+                today={today}
+                cutoff={thisWeek.cutoffOf(s.date)}
+                onChanged={thisWeek.reload}
+              />
+            ))
           ) : me?.participates ? (
             <div className="card empty">
               <span className="big">✨</span>
@@ -75,11 +83,11 @@ export function HoyPage() {
             </div>
           )}
 
-          {todayShifts.length > 0 && mineToday.length !== todayShifts.length && (
+          {todayShifts.some((s) => s.memberId !== me?.id) && (
             <div className="card stack">
               <h2 style={{ marginBottom: 0 }}>🏠 Hoy limpia</h2>
               {todayShifts.filter((s) => s.memberId !== me?.id).map((s) => (
-                <ShiftCard key={s.templateId} shift={s} members={members} compact />
+                <ShiftCard key={s.templateId} shift={s} members={members} compact checked={(s.id && thisWeek.checks[s.id]) || []} />
               ))}
             </div>
           )}

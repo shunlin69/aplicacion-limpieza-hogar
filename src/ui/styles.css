@@ -273,3 +273,47 @@ p { margin: 0; }
 .status-missed { background: var(--danger-soft); color: var(--danger); }
 .order-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
 select.input { appearance: none; }
+
+/* ---------- Fase 4: marcar turno como hecho ---------- */
+.progress { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 55%, transparent); overflow: hidden; }
+.shift .progress { background: var(--surface-2); }
+.progress > span { display: block; height: 100%; border-radius: 999px; background: var(--ok); transition: width 0.3s ease; }
+.space-block { display: flex; flex-direction: column; gap: 6px; }
+.space-block h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.check-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 10px 12px;
+  border: none; border-radius: 14px; background: var(--surface); color: var(--text);
+  font-weight: 700; font-size: 16px; text-align: left; cursor: pointer;
+  transition: transform 0.1s ease, background 0.2s;
+}
+.check-item:active { transform: scale(0.98); }
+.check-item .tick {
+  width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--border); flex-shrink: 0;
+  display: grid; place-items: center; font-size: 16px; color: #fff; transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.check-item.on { background: color-mix(in srgb, var(--mint) 35%, var(--surface)); }
+.check-item.on .tick { background: var(--ok); border-color: var(--ok); animation: pop 0.25s ease; }
+.check-item.on .label { text-decoration: line-through; opacity: 0.7; }
+@keyframes pop { 50% { transform: scale(1.25); } }
+.btn-done { background: var(--ok); color: #fff; font-size: 18px; min-height: 58px; }
+.late-note { background: color-mix(in srgb, var(--peach) 60%, var(--surface)); color: var(--text); }
+.done-hero { text-align: center; padding: 22px 16px; }
+.done-hero .big { font-size: 60px; display: block; animation: pop 0.5s ease; }
+.points-burst {
+  position: fixed; left: 50%; top: 40%; z-index: 50; transform: translate(-50%, -50%);
+  font-size: 56px; font-weight: 900; color: var(--ok); text-shadow: 0 4px 18px rgba(0,0,0,0.15);
+  animation: burst 1.6s ease forwards; pointer-events: none;
+}
+@keyframes burst {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  60% { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -110%) scale(0.9); }
+}
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+.confetti i {
+  position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 3px;
+  animation-name: fall; animation-timing-function: cubic-bezier(.2,.6,.4,1); animation-fill-mode: forwards;
+}
+@keyframes fall { to { transform: translate(var(--x), 105vh) rotate(var(--r)); opacity: 0.9; } }
+.status-pending-late { background: color-mix(in srgb, var(--peach) 70%, var(--surface)); color: var(--text); }
