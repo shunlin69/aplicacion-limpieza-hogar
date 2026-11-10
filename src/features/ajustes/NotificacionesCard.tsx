@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { mensajeError } from '../../lib/errors'
 import { isIOS, isStandalone, pushSupported } from '../../lib/platform'
-import { currentSubscription, disablePush, enablePush, sendTestPush } from '../../lib/push'
+import { disablePush, enablePush, pushActiveHere, sendTestPush } from '../../lib/push'
 import { supabase } from '../../lib/supabase'
 import { useApp } from '../../state/AppState'
 
@@ -23,7 +23,7 @@ export function NotificacionesCard() {
   const supported = pushSupported()
 
   useEffect(() => {
-    currentSubscription().then((s) => setActive(!!s))
+    pushActiveHere().then(setActive)
   }, [])
 
   async function run(fn: () => Promise<string>) {

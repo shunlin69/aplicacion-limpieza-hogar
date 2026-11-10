@@ -16,6 +16,17 @@ export async function currentSubscription() {
 }
 
 /**
+ * ¿Este celular recibe avisos? Debe tener suscripción Y estar registrada en el
+ * servidor (el servidor borra las que Apple/Google dan por vencidas).
+ */
+export async function pushActiveHere(): Promise<boolean> {
+  const sub = await currentSubscription()
+  if (!sub) return false
+  const { data } = await supabase.from('push_subscriptions').select('id').eq('endpoint', sub.endpoint).limit(1)
+  return !!data?.length
+}
+
+/**
  * Pide permiso y registra este celular para recibir notificaciones.
  * Debe llamarse desde un toque del usuario (iPhone lo exige).
  */
@@ -30,6 +41,11 @@ export async function enablePush(userId: string): Promise<void> {
 
   const reg = await registration()
   let sub = await reg.pushManager.getSubscription()
+  // Si el servidor ya no la tiene (vencida), se crea una nueva
+  if (sub && !(await pushActiveHere())) {
+    await sub.unsubscribe().catch(() => undefined)
+    sub = null
+  }
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,

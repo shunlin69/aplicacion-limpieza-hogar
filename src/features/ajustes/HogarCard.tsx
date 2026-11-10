@@ -1,5 +1,5 @@
 // Integrantes del hogar. Un admin puede cambiar el rol y si participa en turnos.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { mensajeError } from '../../lib/errors'
 import { supabase, type Member } from '../../lib/supabase'
 import { useApp } from '../../state/AppState'
@@ -9,6 +9,17 @@ export function HogarCard() {
   const { household, members, isAdmin, me, refresh } = useApp()
   const [editing, setEditing] = useState<string | null>(null)
   const [error, setError] = useState('')
+  // Quién tiene avisos activos en algún celular
+  const [push, setPush] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    if (!household) return
+    void supabase.rpc('household_push_status', { p_household: household.id }).then(({ data }) => {
+      const map: Record<string, boolean> = {}
+      for (const r of (data ?? []) as { member_id: string; has_push: boolean }[]) map[r.member_id] = r.has_push
+      setPush(map)
+    })
+  }, [household, members])
 
   async function update(m: Member, role: Member['role'], participates: boolean) {
     setError('')
@@ -32,6 +43,9 @@ export function HogarCard() {
                 <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                   {m.role === 'admin' && <span className="badge badge-admin">Admin</span>}
                   <span className="badge">{m.participates ? 'Hace turnos' : 'No hace turnos'}</span>
+                  {m.id in push && (
+                    <span className={`badge${push[m.id] ? '' : ' status-missed'}`}>{push[m.id] ? '🔔 Avisos' : '🔕 Sin avisos'}</span>
+                  )}
                 </div>
               </div>
               {isAdmin && (
