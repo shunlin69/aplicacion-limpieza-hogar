@@ -6,6 +6,7 @@ import { useScores } from '../../hooks/useScores'
 import { useApp } from '../../state/AppState'
 import { Historial } from './Historial'
 import { PremiosCard } from './PremiosCard'
+import { Podio } from './Podio'
 import { TablaPosiciones } from './TablaPosiciones'
 
 type Vista = 'semana' | 'mes' | 'historial'
@@ -63,6 +64,7 @@ export function RankingPage() {
             <button className="btn btn-soft btn-small" onClick={() => setWeek(addDays(week, 7))} disabled={week >= thisMonday} aria-label="Semana siguiente">›</button>
           </div>
           <div className="card">
+            <Podio rows={weekRows} members={members} />
             <TablaPosiciones rows={weekRows} members={members} meId={me?.id} />
           </div>
           <p className="small muted" style={{ textAlign: 'center' }}>✓ a tiempo · ⏰ tarde · ✗ sin hacer · % cumplimiento · 🔥 racha</p>
@@ -75,6 +77,7 @@ export function RankingPage() {
             <button className="btn btn-soft btn-small" onClick={() => setMonthRef(nextMonth(monthRef))} disabled={mPeriod.to >= today} aria-label="Mes siguiente">›</button>
           </div>
           <div className="card">
+            <Podio rows={monthRows} members={members} />
             <TablaPosiciones rows={monthRows} members={members} meId={me?.id} />
           </div>
           {household && <PremiosCard householdId={household.id} rewards={rewards} rows={monthRows} members={members} isAdmin={isAdmin} onChanged={() => void reload()} />}

@@ -15,7 +15,8 @@ interface AppState {
   refresh: () => Promise<void>
 }
 
-const Ctx = createContext<AppState | null>(null)
+// Se exporta solo para vistas de prueba del diseño
+export const Ctx = createContext<AppState | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)

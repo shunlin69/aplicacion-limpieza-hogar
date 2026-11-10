@@ -111,3 +111,18 @@ export function rewardProgress(points: number, reward: Reward): { ratio: number;
   const need = Math.max(reward.pointsNeeded, 1)
   return { ratio: Math.min(Math.max(points, 0) / need, 1), earned: points >= need, missing: Math.max(need - points, 0) }
 }
+
+/** Ganador(es) de un período: primer lugar con puntos positivos (puede haber empate) */
+export function champions(rows: RankRow[]): RankRow[] {
+  return rows.filter((r) => r.position === 1 && r.points > 0)
+}
+
+/** Premios que se alcanzaron justo con este cambio de puntos */
+export function rewardsCrossed(before: number, after: number, rewards: Reward[]): Reward[] {
+  return rewards.filter((r) => before < r.pointsNeeded && after >= r.pointsNeeded)
+}
+
+/** Mes anterior al de la fecha dada */
+export function previousMonth(today: LocalDate): Period {
+  return monthPeriod(addDays(monthPeriod(today).from, -1))
+}

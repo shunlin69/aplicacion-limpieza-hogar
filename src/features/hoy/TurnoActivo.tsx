@@ -2,11 +2,35 @@
 // marcando con un toque y botón para terminar, con sonido y confeti.
 import { useEffect, useMemo, useState } from 'react'
 import { halfPoints, pointsForStatus, shiftPhase } from '../../core/completion'
-import { isoWeekday, WEEKDAY_NAMES, type LocalDate } from '../../core/dates'
+import { isoWeekday, localDateOf, WEEKDAY_NAMES, type LocalDate } from '../../core/dates'
+import { inPeriod, monthPeriod, rewardsCrossed, type Reward } from '../../core/ranking'
 import type { WeekShift } from '../../hooks/useWeek'
-import { confetti, playPoints, playTick } from '../../lib/celebrate'
+import { playPoints, playTick } from '../../lib/celebrate'
 import { mensajeError } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
+import { useApp } from '../../state/AppState'
+import { Celebracion } from '../../ui/Celebracion'
+import { Escena, escenaDeTurno } from '../../ui/Escena'
+
+/** Premios del mes que se alcanzaron justo con estos puntos */
+async function premiosRecienGanados(householdId: string, memberId: string, date: LocalDate, tz: string, gained: number): Promise<Reward[]> {
+  const [l, r] = await Promise.all([
+    supabase.from('points_ledger').select('delta, created_at, shift:shifts(date)').eq('member_id', memberId),
+    supabase.from('rewards').select('id, name, icon, points_needed').eq('household_id', householdId).eq('active', true),
+  ])
+  const month = monthPeriod(date)
+  type L = { delta: number; created_at: string; shift: { date: string } | null }
+  const after = ((l.data ?? []) as unknown as L[])
+    .filter((x) => inPeriod(x.shift?.date ?? localDateOf(new Date(x.created_at), tz), month))
+    .reduce((n, x) => n + x.delta, 0)
+  const rewards = ((r.data ?? []) as { id: string; name: string; icon: string; points_needed: number }[]).map((x) => ({ id: x.id, name: x.name, icon: x.icon, pointsNeeded: x.points_needed }))
+  return rewardsCrossed(after - gained, after, rewards)
+}
+
+const espacios = (shift: WeekShift) => {
+  const n = shift.spaces.map((s) => s.name)
+  return n.length > 1 ? `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}` : (n[0] ?? '')
+}
 
 const UNDO_MINUTES = 10
 
@@ -23,7 +47,9 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [burst, setBurst] = useState<number | null>(null)
+  const { household } = useApp()
+  // Celebración abierta tras terminar: puntos ganados, si fue tarde y premios desbloqueados
+  const [fiesta, setFiesta] = useState<{ points: number; late: boolean; rewards: Reward[] } | null>(null)
   const [, setTick] = useState(0)
 
   const items = useMemo(() => shift.spaces.flatMap((s) => s.items ?? []), [shift.spaces])
@@ -68,11 +94,12 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
       setError(mensajeError(e))
       return
     }
-    const pts = (data as { points: number }).points
+    const res = data as { points: number; status: string }
     playPoints()
-    confetti()
-    setBurst(pts)
-    setTimeout(() => setBurst(null), 1700)
+    const rewards = household && shift.memberId
+      ? await premiosRecienGanados(household.id, shift.memberId, shift.date, household.timezone, res.points).catch(() => [])
+      : []
+    setFiesta({ points: res.points, late: res.status === 'late_done', rewards })
     onChanged()
   }
 
@@ -85,42 +112,65 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
     onChanged()
   }
 
+  const escena = escenaDeTurno(shift.spaces)
+  const banner = (
+    <div className="scene-banner">
+      <Escena tipo={escena} />
+      <span className="scene-chip">
+        {WEEKDAY_NAMES[isoWeekday(shift.date)]} · {espacios(shift)}
+      </span>
+    </div>
+  )
+  const celebracion = fiesta && (
+    <Celebracion
+      variant="turno"
+      title={fiesta.late ? '¡Bien, terminado!' : '¡Turno terminado!'}
+      subtitle={fiesta.late ? 'Llegó tarde, pero suma la mitad. ¡La próxima a tiempo!' : 'La casa brilla gracias a ti ✨'}
+      points={fiesta.points}
+      rewards={fiesta.rewards}
+      onClose={() => setFiesta(null)}
+    />
+  )
+
   const canUndo = closed && shift.status !== 'missed' && !!shift.completedAt && Date.now() - new Date(shift.completedAt).getTime() < UNDO_MINUTES * 60_000
 
   if (closed) {
     const pts = pointsForStatus(shift.status, shift.points)
     return (
-      <div className="card done-hero stack">
-        {burst !== null && <div className="points-burst">+{burst}</div>}
-        {shift.status === 'missed' ? (
-          <>
-            <span className="big">😕</span>
-            <h2 style={{ margin: 0 }}>Turno no hecho</h2>
-            <p className="muted">Se restaron {Math.abs(pts)} puntos.</p>
-          </>
-        ) : (
-          <>
-            <span className="big">🏆</span>
-            <h2 style={{ margin: 0 }}>{shift.status === 'done' ? '¡Turno terminado!' : 'Terminado (tarde)'}</h2>
-            <p>
-              <span className="points-pill">+{pts} pts</span>
-            </p>
-            <p className="muted small">{shift.spaces.map((s) => `${s.icon} ${s.name}`).join(' · ')}</p>
-          </>
-        )}
-        {canUndo && (
-          <button className="btn btn-ghost btn-small" onClick={undo} disabled={busy}>
-            Me equivoqué, deshacer
-          </button>
-        )}
-        {error && <div className="alert alert-error">{error}</div>}
+      <div className={`card stack done-card${shift.status === 'missed' ? ' done-missed' : ''}`}>
+        {celebracion}
+        {banner}
+        <div className="done-hero stack">
+          {shift.status === 'missed' ? (
+            <>
+              <span className="big">😕</span>
+              <h2 style={{ margin: 0 }}>Turno no hecho</h2>
+              <p className="muted">Se restaron {Math.abs(pts)} puntos. ¡La próxima sale!</p>
+            </>
+          ) : (
+            <>
+              <span className="big">🏆</span>
+              <h2 style={{ margin: 0 }}>{shift.status === 'done' ? '¡Turno terminado!' : 'Terminado (tarde)'}</h2>
+              <p>
+                <span className="points-pill">+{pts} pts</span>
+              </p>
+            </>
+          )}
+          {canUndo && (
+            <button className="btn btn-ghost btn-small" onClick={undo} disabled={busy}>
+              Me equivoqué, deshacer
+            </button>
+          )}
+          {error && <div className="alert alert-error">{error}</div>}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="card card-hero stack">
-      {burst !== null && <div className="points-burst">+{burst}</div>}
+      {celebracion}
+      {banner}
       <div className="row-between">
         <h2 style={{ margin: 0 }}>{phase === 'late' ? '⏰ Turno atrasado' : '🧽 ¡Hoy te toca!'}</h2>
         <span className="points-pill">{worth} pts</span>
@@ -164,7 +214,7 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      <button className="btn btn-done btn-block" onClick={complete} disabled={!allDone || busy || !shift.id}>
+      <button className={`btn btn-done btn-block${allDone && !busy ? ' ready' : ''}`} onClick={complete} disabled={!allDone || busy || !shift.id}>
         {busy ? 'Guardando…' : allDone ? `¡Listo! Ganar ${worth} pts` : `Faltan ${total - done} por marcar`}
       </button>
     </div>

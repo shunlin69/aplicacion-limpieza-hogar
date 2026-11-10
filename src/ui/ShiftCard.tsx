@@ -4,6 +4,7 @@ import { pointsForStatus } from '../core/completion'
 import type { WeekShift } from '../hooks/useWeek'
 import type { Member } from '../lib/supabase'
 import { Avatar } from './Avatar'
+import { Escena, escenaDeTurno } from './Escena'
 
 const REASON_TEXT: Partial<Record<WeekShift['reason'], (orig: string) => string>> = {
   cubre_ausencia: (o) => `Cubre a ${o}`,
@@ -45,6 +46,9 @@ export function ShiftCard({ shift, members, meId, compact, checked = [], late, f
   const mine = !!meId && shift.memberId === meId
   return (
     <div className={`shift${mine ? ' shift-mine' : ''}`}>
+      <div className="shift-scene" aria-hidden>
+        <Escena tipo={escenaDeTurno(shift.spaces)} />
+      </div>
       <div className="row-between">
         <div className="row" style={{ minWidth: 0 }}>
           {who ? <Avatar profile={who.profile} /> : <span className="avatar" style={{ background: 'var(--surface-2)' }}>❔</span>}

@@ -3,6 +3,7 @@ import { AjustesPage } from './features/ajustes/AjustesPage'
 import { AuthScreen } from './features/auth/AuthScreen'
 import { HoyPage } from './features/hoy/HoyPage'
 import { OnboardingScreen } from './features/onboarding/OnboardingScreen'
+import { CampeonDelMes } from './features/ranking/CampeonDelMes'
 import { RankingPage } from './features/ranking/RankingPage'
 import { SemanaPage } from './features/semana/SemanaPage'
 import { TareasPage } from './features/tareas/TareasPage'
@@ -33,6 +34,7 @@ function Gate({ inviteCode }: { inviteCode?: string }) {
         </Routes>
       </main>
       <TabBar />
+      <CampeonDelMes />
     </>
   )
 }

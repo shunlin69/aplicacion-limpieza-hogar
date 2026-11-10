@@ -4,6 +4,7 @@ import { useWeek } from '../../hooks/useWeek'
 import { useApp } from '../../state/AppState'
 import { Avatar } from '../../ui/Avatar'
 import { ShiftCard } from '../../ui/ShiftCard'
+import { Escena, escenaDeTurno } from '../../ui/Escena'
 import { TurnoActivo } from './TurnoActivo'
 import { useSwaps } from '../../hooks/useSwaps'
 import { BotonCambio } from '../cambios/BotonCambio'
@@ -53,6 +54,9 @@ export function HoyPage() {
 
       {!household?.rotation_start ? (
         <div className="card card-hero stack">
+          <div className="scene-banner">
+            <Escena tipo="casa" />
+          </div>
           <h2 style={{ marginBottom: 0 }}>🏠 {household?.name}</h2>
           <p>Los turnos aparecerán aquí cuando un admin haga el sorteo de la rotación (en Ajustes).</p>
         </div>
@@ -72,14 +76,21 @@ export function HoyPage() {
               />
             ))
           ) : me?.participates ? (
-            <div className="card empty">
-              <span className="big">✨</span>
-              <p className="muted">Hoy no tienes turno. ¡Disfruta!</p>
+            <div className="card stack">
+              <div className="scene-banner">
+                <Escena tipo="living" />
+                <span className="scene-chip">Día libre</span>
+              </div>
+              <h2 style={{ marginBottom: 0 }}>✨ Hoy no tienes turno</h2>
+              <p className="muted">¡Disfruta! Te avisamos cuando te toque.</p>
             </div>
           ) : null}
 
           {myNext && (
             <div className="card stack">
+              <div className="scene-banner scene-banner-sm">
+                <Escena tipo={escenaDeTurno(myNext.spaces)} />
+              </div>
               <h2 style={{ marginBottom: 0 }}>📅 Tu próximo turno</h2>
               <p>
                 <b>{WEEKDAY_NAMES[isoWeekday(myNext.date)]}</b> {fmtLong(myNext.date).split(', ')[1]}
