@@ -4,6 +4,8 @@ import { addDays, isoWeekday, WEEKDAY_NAMES, type LocalDate } from '../../core/d
 import type { Activity } from '../../hooks/useScores'
 import type { Member } from '../../lib/supabase'
 import { Avatar } from '../../ui/Avatar'
+import { useShiftPhotos } from '../../lib/fotos'
+import { BotonFotos } from '../fotos/FotosTurno'
 
 const fmtDay = (d: string) => new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
 const dayName = (d: unknown) => (typeof d === 'string' ? `${WEEKDAY_NAMES[isoWeekday(d)].toLowerCase()} ${fmtDay(d)}` : '')
@@ -20,6 +22,9 @@ interface Props {
 export function Historial({ members, ledger, results, activity, thisMonday, timeZone }: Props) {
   const byUser = (uid: string | null) => members.find((m) => m.user_id === uid)?.profile.display_name ?? 'Alguien'
   const byMember = (id: unknown) => members.find((m) => m.id === id)?.profile.display_name ?? 'alguien'
+  // Fotos de respaldo de los turnos terminados que aparecen en el historial
+  const turnoDe = (a: Activity) => (['turno_hecho', 'turno_tarde'].includes(a.verb) && typeof a.payload.turno === 'string' ? a.payload.turno : null)
+  const fotos = useShiftPhotos(members[0]?.household_id, [...new Set(activity.flatMap((a) => turnoDe(a) ?? []))])
 
   // Resumen de la semana pasada
   const lastMonday = addDays(thisMonday, -7)
@@ -96,7 +101,13 @@ export function Historial({ members, ledger, results, activity, thisMonday, time
                 <span className="feed-icon">{t.icon}</span>
                 <div>
                   <div>{t.msg}</div>
-                  <div className="small muted">{when(a.createdAt)}</div>
+                  <div className="row small muted" style={{ gap: 8 }}>
+                    {when(a.createdAt)}
+                    {(() => {
+                      const id = turnoDe(a)
+                      return id && fotos.photos[id] ? <BotonFotos photos={fotos.photos[id]} title={t.msg} /> : null
+                    })()}
+                  </div>
                 </div>
               </li>
             )

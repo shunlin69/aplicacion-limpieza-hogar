@@ -1,4 +1,5 @@
-// Integrantes del hogar. Un admin puede cambiar el rol y si participa en turnos.
+// Integrantes del hogar. Un admin puede cambiar el rol y si participa en turnos,
+// y decidir si la foto de respaldo es obligatoria.
 import { useEffect, useState } from 'react'
 import { mensajeError } from '../../lib/errors'
 import { supabase, type Member } from '../../lib/supabase'
@@ -24,6 +25,14 @@ export function HogarCard() {
   async function update(m: Member, role: Member['role'], participates: boolean) {
     setError('')
     const { error: err } = await supabase.rpc('update_member', { p_member: m.id, p_role: role, p_participates: participates })
+    if (err) setError(mensajeError(err))
+    await refresh()
+  }
+
+  async function setRequirePhoto(on: boolean) {
+    if (!household || household.require_photo === on) return
+    setError('')
+    const { error: err } = await supabase.from('households').update({ require_photo: on }).eq('id', household.id)
     if (err) setError(mensajeError(err))
     await refresh()
   }
@@ -77,6 +86,28 @@ export function HogarCard() {
           </div>
         ))}
       </div>
+      {household && (
+        <div className="stack" style={{ gap: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+          <div>
+            <b>📷 Foto de respaldo</b>
+            <p className="small muted" style={{ margin: 0 }}>
+              {household.require_photo
+                ? 'Para terminar un turno hay que subir al menos una foto.'
+                : 'Las fotos son opcionales: cada uno puede agregar hasta 4 al hacer su turno.'}
+            </p>
+          </div>
+          {isAdmin && (
+            <div className="segmented">
+              <button className={!household.require_photo ? 'on' : ''} onClick={() => void setRequirePhoto(false)}>
+                Opcional
+              </button>
+              <button className={household.require_photo ? 'on' : ''} onClick={() => void setRequirePhoto(true)}>
+                Obligatoria
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       {error && <div className="alert alert-error">{error}</div>}
     </section>
   )

@@ -19,6 +19,7 @@ export interface Household {
   name: string
   timezone: string
   rotation_start: string | null // lunes en que parte la rotación
+  require_photo: boolean // exigir foto de respaldo para terminar un turno
 }
 
 export interface Member {

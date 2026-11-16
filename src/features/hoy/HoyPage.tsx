@@ -9,6 +9,8 @@ import { TurnoActivo } from './TurnoActivo'
 import { useSwaps } from '../../hooks/useSwaps'
 import { BotonCambio } from '../cambios/BotonCambio'
 import { SolicitudesCard } from '../cambios/SolicitudesCard'
+import { useShiftPhotos } from '../../lib/fotos'
+import { BotonFotos } from '../fotos/FotosTurno'
 
 const saludo = (h: number) => (h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches')
 const fmtLong = (d: string) => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
@@ -32,6 +34,7 @@ export function HoyPage() {
   const myNext = all.find((s) => s.memberId === me?.id && s.date > today)
   const loading = thisWeek.loading || nextWeek.loading
   const { swaps, reload: reloadSwaps } = useSwaps(household)
+  const fotos = useShiftPhotos(household?.id, thisWeek.shifts.flatMap((s) => (s.id ? [s.id] : [])))
   const refreshAll = () => {
     void reloadSwaps()
     void thisWeek.reload()
@@ -72,7 +75,9 @@ export function HoyPage() {
                 checked={(s.id && thisWeek.checks[s.id]) || []}
                 today={today}
                 cutoff={thisWeek.cutoffOf(s.date)}
+                photos={(s.id && fotos.photos[s.id]) || []}
                 onChanged={thisWeek.reload}
+                onPhotosChanged={fotos.reload}
               />
             ))
           ) : me?.participates ? (
@@ -114,7 +119,7 @@ export function HoyPage() {
             <div className="card stack">
               <h2 style={{ marginBottom: 0 }}>🏠 Hoy limpia</h2>
               {todayShifts.filter((s) => s.memberId !== me?.id).map((s) => (
-                <ShiftCard key={s.templateId} shift={s} members={members} compact checked={(s.id && thisWeek.checks[s.id]) || []} />
+                <ShiftCard key={s.templateId} shift={s} members={members} compact checked={(s.id && thisWeek.checks[s.id]) || []} footer={s.id && fotos.photos[s.id] ? <BotonFotos photos={fotos.photos[s.id]} /> : undefined} />
               ))}
             </div>
           )}

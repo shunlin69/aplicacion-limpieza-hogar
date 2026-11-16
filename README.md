@@ -63,6 +63,11 @@ En la misma tarjeta eliges **a qué hora te avisamos el día de tu turno**: 10:0
 
 ¿Te equivocaste al marcar como hecho? Tienes **10 minutos** para tocar **"Me equivoqué, deshacer"**.
 
+**Fotos de respaldo 📷**: en tu turno aparece **Agregar** para sacar una foto (o elegirla de la
+galería) de cómo quedó. Puedes subir hasta **4 por turno**, mientras lo haces y hasta **24 horas**
+después de terminarlo. Las ven todos los del hogar tocando **📷** en Semana, en Hoy o en el
+Historial. Si el admin la dejó **obligatoria**, el botón ¡Listo! espera a que haya al menos una.
+
 ### Pedir un cambio de turno
 
 1. En tu turno (Hoy o Semana) toca **🔄 Pedir cambio**.
@@ -161,6 +166,8 @@ Los admins (en esta casa, los padres) **no hacen turnos** salvo que se marquen c
   sola sin tocar turnos ya hechos, pasados o intercambiados.
 - **Premios**: Ranking → Mes → Agregar premio.
 - **Espacios y lista de "limpio"**: pestaña Tareas.
+- **Foto obligatoria u opcional**: Ajustes → tarjeta del hogar → Foto de respaldo. Un admin
+  también puede quitar cualquier foto desde el visor.
 - **Rol y participación de cada uno**: Ajustes → Integrantes → Editar. El hogar nunca puede
   quedar sin admin.
 
@@ -205,7 +212,7 @@ VITE_SUPABASE_KEY=sb_publishable_...
 | `src/ui` | Estilos (pastel + modo oscuro), barra de pestañas y tarjetas |
 | `src/sw.ts` | Service worker: modo sin conexión y recepción de avisos |
 | `supabase/migrations` | Tablas, RLS, funciones y tareas programadas, en orden |
-| `supabase/functions` | Edge Functions `signup`, `push` y `schedule` |
+| `supabase/functions` | Edge Functions `signup`, `push`, `schedule` y `fotos` |
 | `scripts` | `sync-core.sh` (copia el algoritmo al servidor) y `generar-iconos.mjs` |
 
 ### Pruebas
@@ -257,6 +264,7 @@ supabase functions deploy schedule --no-verify-jwt
    supabase functions deploy signup --no-verify-jwt
    supabase functions deploy push --no-verify-jwt
    supabase functions deploy schedule --no-verify-jwt
+   supabase functions deploy fotos --no-verify-jwt
    ```
 6. Las **claves VAPID** de las notificaciones se generan solas la primera vez que alguien
    activa los avisos. La privada queda cifrada en Vault y nunca sale del servidor.
@@ -274,7 +282,7 @@ iPhone (PWA)  ──▶  Supabase
                     ├─ Postgres + RLS  ◀── el celular solo lee; las acciones son funciones validadas
                     ├─ Realtime        ──▶ la app se actualiza en vivo
                     ├─ pg_cron         ──▶ reparto, no hechos, avisos (hora de Chile del hogar)
-                    └─ Edge Functions  ──▶ schedule (reparto/sorteo), push (Web Push), signup
+                    └─ Edge Functions  ──▶ schedule (reparto/sorteo), push (Web Push), signup, fotos
 ```
 
 - **Todo cuelga de un hogar** (`household_id`) y cada tabla tiene RLS: nadie ve ni toca datos
@@ -284,6 +292,10 @@ iPhone (PWA)  ──▶  Supabase
   es tuyo, si está en plazo y si eres admin.
 - **Puntos** en un libro que solo crece (`points_ledger`); deshacer agrega la resta, no borra.
 - **Historial** (`activity_log`) de todo: sorteos, repartos, turnos, cambios.
+- **Fotos** en el bucket privado `fotos-turnos` (ruta `hogar/turno/foto.jpg`): solo se ven con
+  enlaces firmados de 1 hora y solo las ve el hogar. Se achican en el celular a 1600 px (~100–300 KB)
+  antes de subir. Subir o quitar solo se permite en tu propio turno abierto o hasta 24 h después; quitar lo hace
+  la Edge Function `fotos` (la base decide el permiso con la sesión de quien pide).
 - **Fechas** como días locales `YYYY-MM-DD` con la zona `America/Santiago`; los cambios de
   horario de Chile no corren los días.
 - **Avisos** en `notification_log` con llave única (nunca se repiten) y reserva previa para
@@ -316,7 +328,7 @@ La recuperación por correo desde la app llega junto con la verificación de cor
 
 La base ya está preparada para:
 
-- **Foto de prueba y verificación** del turno por un admin (campo `verification_status` reservado).
+- **Verificación** del turno por un admin mirando las fotos (campo `verification_status` reservado).
 - **Lista de compras** de artículos de limpieza.
 - **Lanzamiento público** para más familias. Antes de eso: activar la **verificación de correo**
   con un SMTP propio (hoy las cuentas se crean confirmadas con la función `signup` para no

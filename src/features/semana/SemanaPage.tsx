@@ -9,6 +9,8 @@ import { Avatar } from '../../ui/Avatar'
 import { ShiftCard } from '../../ui/ShiftCard'
 import { BotonCambio } from '../cambios/BotonCambio'
 import { useSwaps } from '../../hooks/useSwaps'
+import { useShiftPhotos } from '../../lib/fotos'
+import { BotonFotos } from '../fotos/FotosTurno'
 
 const fmtDay = (d: string) => new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
 
@@ -20,12 +22,25 @@ export function SemanaPage() {
   const { shifts, checks, cutoffOf, isProjection, debts, absences, loading } = useWeek(household, members, week)
 
   const { swaps } = useSwaps(household)
+  const fotos = useShiftPhotos(household?.id, shifts.flatMap((s) => (s.id ? [s.id] : [])))
   const name = (id: string) => members.find((m) => m.id === id)?.profile.display_name ?? 'alguien'
   const participants = members.filter((m) => m.participates)
   const resting = participants.filter((m) => !shifts.some((s) => s.memberId === m.id))
   const weekAbsences = absences.filter((a) => a.weekStart === week)
   const openDebts = debts.filter((d) => !d.settledWeek)
   const isCurrent = week === weekStartOf(today)
+  // Pie de cada turno: fotos de respaldo y pedir cambio (si es mío y viene)
+  const pie = (s: (typeof shifts)[number]) => {
+    const ph = s.id ? fotos.photos[s.id] : undefined
+    const cambio = s.id && s.memberId === me?.id && s.status === 'pending' && s.date >= today
+    if (!ph && !cambio) return undefined
+    return (
+      <>
+        {ph && <BotonFotos photos={ph} title={`${WEEKDAY_NAMES[isoWeekday(s.date)]} ${fmtDay(s.date)} · ${name(s.memberId ?? '')}`} />}
+        {cambio && <BotonCambio shift={s} swaps={swaps} today={today} />}
+      </>
+    )
+  }
 
   return (
     <div className="page">
@@ -66,7 +81,7 @@ export function SemanaPage() {
                   <b>{WEEKDAY_NAMES[isoWeekday(d)]}</b> <span className="muted small">{fmtDay(d)}</span>
                   {isToday && <span className="badge badge-me">Hoy</span>}
                 </div>
-                {dayShifts.length ? dayShifts.map((s) => <ShiftCard key={s.templateId + s.date} shift={s} members={members} meId={me?.id} compact checked={(s.id && checks[s.id]) || []} late={s.status === 'pending' && shiftPhase(today, s.date, cutoffOf(s.date)) === 'late'} footer={s.id && s.memberId === me?.id && s.status === 'pending' && s.date >= today ? <BotonCambio shift={s} swaps={swaps} today={today} /> : undefined} />) : <span className="small muted">Sin turno</span>}
+                {dayShifts.length ? dayShifts.map((s) => <ShiftCard key={s.templateId + s.date} shift={s} members={members} meId={me?.id} compact checked={(s.id && checks[s.id]) || []} late={s.status === 'pending' && shiftPhase(today, s.date, cutoffOf(s.date)) === 'late'} footer={pie(s)} />) : <span className="small muted">Sin turno</span>}
               </section>
             )
           })}

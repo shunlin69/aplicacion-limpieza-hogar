@@ -11,6 +11,8 @@ import { supabase } from '../../lib/supabase'
 import { useApp } from '../../state/AppState'
 import { Celebracion } from '../../ui/Celebracion'
 import { Escena, escenaDeTurno } from '../../ui/Escena'
+import type { ShiftPhoto } from '../../lib/fotos'
+import { FotosTurno } from '../fotos/FotosTurno'
 
 /** Premios del mes que se alcanzaron justo con estos puntos */
 async function premiosRecienGanados(householdId: string, memberId: string, date: LocalDate, tz: string, gained: number): Promise<Reward[]> {
@@ -39,10 +41,12 @@ interface Props {
   checked: string[] // ítems marcados según el servidor
   today: LocalDate
   cutoff: LocalDate
+  photos: ShiftPhoto[]
   onChanged: () => Promise<void> | void
+  onPhotosChanged: () => Promise<void> | void
 }
 
-export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props) {
+export function TurnoActivo({ shift, checked, today, cutoff, photos, onChanged, onPhotosChanged }: Props) {
   // Cambios del usuario aún no confirmados por el servidor (respuesta instantánea)
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
@@ -60,6 +64,7 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
   const phase = shiftPhase(today, shift.date, cutoff)
   const worth = phase === 'late' ? halfPoints(shift.points) : shift.points
   const closed = shift.status !== 'pending'
+  const needPhoto = !!household?.require_photo && photos.length === 0
 
   // Refresca cada 30 s para esconder "Deshacer" cuando pasan los 10 minutos
   useEffect(() => {
@@ -132,6 +137,12 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
     />
   )
 
+  // Fotos: mientras está abierto, o hasta 24 horas después de terminarlo (lo valida el servidor)
+  const photosOpen = !!shift.id && (!closed || (shift.status !== 'missed' && !!shift.completedAt && Date.now() - new Date(shift.completedAt).getTime() < 24 * 3600_000))
+  const fotos = shift.id && (
+    <FotosTurno shiftId={shift.id} photos={photos} canEdit={photosOpen} required={!!household?.require_photo} onChanged={onPhotosChanged} />
+  )
+
   const canUndo = closed && shift.status !== 'missed' && !!shift.completedAt && Date.now() - new Date(shift.completedAt).getTime() < UNDO_MINUTES * 60_000
 
   if (closed) {
@@ -156,6 +167,7 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
               </p>
             </>
           )}
+          {fotos}
           {canUndo && (
             <button className="btn btn-ghost btn-small" onClick={undo} disabled={busy}>
               Me equivoqué, deshacer
@@ -212,10 +224,12 @@ export function TurnoActivo({ shift, checked, today, cutoff, onChanged }: Props)
         </div>
       ))}
 
+      {fotos}
+
       {error && <div className="alert alert-error">{error}</div>}
 
-      <button className={`btn btn-done btn-block${allDone && !busy ? ' ready' : ''}`} onClick={complete} disabled={!allDone || busy || !shift.id}>
-        {busy ? 'Guardando…' : allDone ? `¡Listo! Ganar ${worth} pts` : `Faltan ${total - done} por marcar`}
+      <button className={`btn btn-done btn-block${allDone && !needPhoto && !busy ? ' ready' : ''}`} onClick={complete} disabled={!allDone || needPhoto || busy || !shift.id}>
+        {busy ? 'Guardando…' : !allDone ? `Faltan ${total - done} por marcar` : needPhoto ? 'Falta la foto de respaldo 📷' : `¡Listo! Ganar ${worth} pts`}
       </button>
     </div>
   )
