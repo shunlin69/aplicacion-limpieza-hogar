@@ -2,6 +2,7 @@
 -- Fotos de respaldo de los turnos.
 -- Quien hace el turno puede subir hasta 4 fotos mientras lo hace y
 -- hasta 24 horas después de terminarlo. Todo el hogar puede verlas.
+-- Quitar fotos pasa por la Edge Function "fotos".
 -- Las fotos se guardan en un bucket PRIVADO: solo se ven con un enlace
 -- firmado que dura poco, y cada hogar ve solo las suyas.
 -- Ruta del archivo: <hogar>/<turno>/<id>.jpg
@@ -80,16 +81,8 @@ create policy "fotos: subir a mi turno" on storage.objects
     and public.can_edit_shift_photos(public.try_uuid((storage.foldername(name))[2]))
   );
 
--- Borrar: quien la subió mientras pueda editar, o un admin del hogar
-create policy "fotos: borrar" on storage.objects
-  for delete to authenticated
-  using (
-    bucket_id = 'fotos-turnos'
-    and (
-      (owner_id = auth.uid()::text and public.can_edit_shift_photos(public.try_uuid((storage.foldername(name))[2])))
-      or public.is_admin(public.try_uuid((storage.foldername(name))[1]))
-    )
-  );
+-- Borrar archivos y registros lo hace la función "fotos" (Edge Function) con
+-- permisos de servidor, después de validar con photo_removal_path / photo_discard_allowed.
 
 -- Registra una foto ya subida
 create or replace function public.add_shift_photo(p_shift uuid, p_path text)
@@ -117,12 +110,13 @@ begin
 end;
 $$;
 
--- Quita una foto del registro y devuelve la ruta para borrar el archivo
-create or replace function public.remove_shift_photo(p_id uuid)
-returns text language plpgsql security definer set search_path = '' as $$
+-- ¿Puedo quitar esta foto? Devuelve la ruta del archivo si sí.
+-- Quien la subió (mientras pueda editar el turno) o un admin del hogar.
+create or replace function public.photo_removal_path(p_id uuid)
+returns text language plpgsql stable security definer set search_path = '' as $$
 declare v_p public.shift_photos;
 begin
-  select * into v_p from public.shift_photos where id = p_id for update;
+  select * into v_p from public.shift_photos where id = p_id;
   if not found or not public.is_member(v_p.household_id) then raise exception 'Foto no encontrada'; end if;
   if not (
     (v_p.uploaded_by = auth.uid() and public.can_edit_shift_photos(v_p.shift_id))
@@ -130,9 +124,17 @@ begin
   ) then
     raise exception 'Ya no puedes quitar esta foto';
   end if;
-  delete from public.shift_photos where id = p_id;
   return v_p.path;
 end;
+$$;
+
+-- ¿Este archivo es mío y quedó sin registrar? (subida que falló a medias)
+create or replace function public.photo_discard_allowed(p_path text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from storage.objects o
+    where o.bucket_id = 'fotos-turnos' and o.name = p_path and o.owner_id = auth.uid()::text
+  ) and not exists (select 1 from public.shift_photos where path = p_path);
 $$;
 
 -- Terminar turno: igual que antes, más la foto obligatoria si el hogar la exige
@@ -181,10 +183,12 @@ $$;
 revoke execute on function public.try_uuid(text) from public, anon;
 revoke execute on function public.can_edit_shift_photos(uuid) from public, anon;
 revoke execute on function public.add_shift_photo(uuid, text) from public, anon;
-revoke execute on function public.remove_shift_photo(uuid) from public, anon;
+revoke execute on function public.photo_removal_path(uuid) from public, anon;
+revoke execute on function public.photo_discard_allowed(text) from public, anon;
 grant execute on function public.try_uuid(text) to authenticated;
 grant execute on function public.can_edit_shift_photos(uuid) to authenticated;
 grant execute on function public.add_shift_photo(uuid, text) to authenticated;
-grant execute on function public.remove_shift_photo(uuid) to authenticated;
+grant execute on function public.photo_removal_path(uuid) to authenticated;
+grant execute on function public.photo_discard_allowed(text) to authenticated;
 
 alter publication supabase_realtime add table public.shift_photos;

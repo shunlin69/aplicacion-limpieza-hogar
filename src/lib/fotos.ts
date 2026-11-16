@@ -60,16 +60,21 @@ export async function uploadShiftPhoto(householdId: string, shiftId: string, fil
   const { error } = await supabase.rpc('add_shift_photo', { p_shift: shiftId, p_path: path })
   if (error) {
     // Si no se pudo registrar, no deja el archivo suelto
-    await supabase.storage.from(BUCKET).remove([path])
+    await supabase.functions.invoke('fotos', { body: { action: 'discard', path } }).catch(() => undefined)
     throw error
   }
 }
 
-/** Quita una foto (registro y archivo) */
+/** Quita una foto (registro y archivo). Lo hace el servidor tras revisar el permiso. */
 export async function removeShiftPhoto(photoId: string): Promise<void> {
-  const { data, error } = await supabase.rpc('remove_shift_photo', { p_id: photoId })
-  if (error) throw error
-  if (typeof data === 'string') await supabase.storage.from(BUCKET).remove([data])
+  const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>('fotos', { body: { action: 'remove', id: photoId } })
+  if (error) {
+    // El mensaje del servidor viene en el cuerpo de la respuesta
+    const ctx = (error as { context?: Response }).context
+    const msg = ctx ? await ctx.json().then((j: { error?: string }) => j.error).catch(() => undefined) : undefined
+    throw new Error(msg ?? error.message)
+  }
+  if (data?.error) throw new Error(data.error)
 }
 
 // Enlaces firmados en memoria para no pedirlos cada vez
