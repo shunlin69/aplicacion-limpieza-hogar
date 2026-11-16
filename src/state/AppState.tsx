@@ -59,7 +59,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return
     }
     const [{ data: h }, { data: ms }] = await Promise.all([
-      supabase.from('households').select('id, name, timezone, rotation_start').eq('id', householdId).single(),
+      supabase.from('households').select('id, name, timezone, rotation_start, require_photo').eq('id', householdId).single(),
       supabase
         .from('household_members')
         .select('id, household_id, user_id, role, participates, reminder_time, rotation_order, profile:profiles!household_members_user_id_profiles_fkey(id, display_name, avatar, color)')

@@ -561,3 +561,37 @@ select.input { appearance: none; }
 }
 .campeon-resto-fila:nth-child(2) { animation-delay: .1s; }
 .campeon-resto-fila:nth-child(3) { animation-delay: .2s; }
+
+/* ---------- Fotos de respaldo ---------- */
+.fotos { padding: 12px; border-radius: 18px; background: var(--surface-2); gap: 10px; text-align: left; width: 100%; }
+.fotos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.foto-mini {
+  aspect-ratio: 1; border-radius: 14px; overflow: hidden; border: 1px solid var(--border);
+  background: var(--surface); display: grid; place-items: center; padding: 0; cursor: pointer;
+  animation: pop-in .35s both;
+}
+.foto-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-mini .spinner { width: 20px; height: 20px; margin: 0; }
+.foto-add {
+  border: 2px dashed var(--primary); background: var(--primary-soft); color: var(--primary-strong);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-weight: 800;
+}
+.foto-add span[aria-hidden] { font-size: 22px; line-height: 1; }
+.foto-subiendo { background: var(--surface); }
+.foto-chip { cursor: pointer; border: 0; font: inherit; }
+
+.visor {
+  position: fixed; inset: 0; z-index: 70; background: rgba(28, 24, 20, .97); backdrop-filter: blur(6px); color: #faf5ec;
+  display: flex; flex-direction: column; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  animation: fade-in .2s both;
+}
+.visor-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.visor-close, .visor-nav {
+  width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(250, 245, 236, .14); color: inherit;
+  font-size: 22px; cursor: pointer; flex: none;
+}
+.visor-nav:disabled { opacity: .3; }
+.visor-img { flex: 1; display: grid; place-items: center; min-height: 0; padding: 12px 0; }
+.visor-img img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; animation: fade-in .25s both; }
+.visor-bottom { display: flex; justify-content: center; align-items: center; gap: 24px; }
+.visor-remove { align-self: center; margin-top: 8px; color: #f3b7a8; }
