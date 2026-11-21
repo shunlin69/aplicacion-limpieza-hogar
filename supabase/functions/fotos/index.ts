@@ -1,8 +1,10 @@
-// Edge Function: quitar fotos de respaldo.
+// Edge Function: quitar fotos de respaldo y de quejas.
 // Acciones:
-//   { action: 'remove', id }    -> quita una foto registrada (quien la subió en plazo, o un admin)
-//   { action: 'discard', path } -> borra un archivo mío que quedó sin registrar (subida a medias)
-// Los permisos los decide la base de datos (photo_removal_path / photo_discard_allowed),
+//   { action: 'remove', id }           -> quita una foto de respaldo (quien la subió en plazo, o un admin)
+//   { action: 'remove-complaint', id } -> quita una foto de queja (quien reclamó en plazo, o un admin)
+//   { action: 'discard', path }        -> borra un archivo mío que quedó sin registrar (subida a medias)
+// Los permisos los decide la base de datos (photo_removal_path, complaint_photo_removal_path,
+// photo_discard_allowed),
 // llamadas con la sesión de quien pide; el borrado lo hace el servidor.
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4'
 
@@ -37,6 +39,15 @@ Deno.serve(async (req) => {
       const { data: path, error } = await asUser.rpc('photo_removal_path', { p_id: body.id })
       if (error) return json({ error: error.message }, 400)
       const del = await admin.from('shift_photos').delete().eq('id', body.id)
+      if (del.error) throw del.error
+      await admin.storage.from(BUCKET).remove([path as string])
+      return json({ ok: true })
+    }
+
+    if (body.action === 'remove-complaint' && typeof body.id === 'string') {
+      const { data: path, error } = await asUser.rpc('complaint_photo_removal_path', { p_id: body.id })
+      if (error) return json({ error: error.message }, 400)
+      const del = await admin.from('complaint_photos').delete().eq('id', body.id)
       if (del.error) throw del.error
       await admin.storage.from(BUCKET).remove([path as string])
       return json({ ok: true })

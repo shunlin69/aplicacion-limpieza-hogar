@@ -1,6 +1,7 @@
-// Fotos de respaldo de los turnos: se achican en el celular antes de subir
-// (así suben rápido y no llenan el almacenamiento) y se guardan en un
-// bucket privado. Para verlas se piden enlaces firmados que duran 1 hora.
+// Fotos de respaldo de los turnos y fotos de evidencia de las quejas.
+// Se achican en el celular antes de subir (así suben rápido y no llenan
+// el almacenamiento) y se guardan en un bucket privado. Para verlas se
+// piden enlaces firmados que duran 1 hora.
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
@@ -51,30 +52,94 @@ export async function compressImage(file: File): Promise<Blob> {
   }
 }
 
-/** Sube una foto a un turno y la registra */
-export async function uploadShiftPhoto(householdId: string, shiftId: string, file: File): Promise<void> {
+/** Achica la foto y la sube al bucket en esa ruta */
+async function uploadTo(path: string, file: File): Promise<void> {
   const blob = await compressImage(file)
-  const path = photoPath(householdId, shiftId, crypto.randomUUID())
   const up = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false })
   if (up.error) throw up.error
+}
+
+/** Borra archivos míos que quedaron sin registrar (subida a medias) */
+async function discard(paths: string[]): Promise<void> {
+  await Promise.all(paths.map((path) => supabase.functions.invoke('fotos', { body: { action: 'discard', path } }).catch(() => undefined)))
+}
+
+/** Llama a la función "fotos"; el mensaje de error del servidor viene en el cuerpo */
+async function invokeFotos(body: Record<string, unknown>): Promise<void> {
+  const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>('fotos', { body })
+  if (error) {
+    const ctx = (error as { context?: Response }).context
+    const msg = ctx ? await ctx.json().then((j: { error?: string }) => j.error).catch(() => undefined) : undefined
+    throw new Error(msg ?? error.message)
+  }
+  if (data?.error) throw new Error(data.error)
+}
+
+/** Sube una foto a un turno y la registra */
+export async function uploadShiftPhoto(householdId: string, shiftId: string, file: File): Promise<void> {
+  const path = photoPath(householdId, shiftId, crypto.randomUUID())
+  await uploadTo(path, file)
   const { error } = await supabase.rpc('add_shift_photo', { p_shift: shiftId, p_path: path })
   if (error) {
     // Si no se pudo registrar, no deja el archivo suelto
-    await supabase.functions.invoke('fotos', { body: { action: 'discard', path } }).catch(() => undefined)
+    await discard([path])
     throw error
   }
 }
 
 /** Quita una foto (registro y archivo). Lo hace el servidor tras revisar el permiso. */
 export async function removeShiftPhoto(photoId: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>('fotos', { body: { action: 'remove', id: photoId } })
-  if (error) {
-    // El mensaje del servidor viene en el cuerpo de la respuesta
-    const ctx = (error as { context?: Response }).context
-    const msg = ctx ? await ctx.json().then((j: { error?: string }) => j.error).catch(() => undefined) : undefined
-    throw new Error(msg ?? error.message)
+  await invokeFotos({ action: 'remove', id: photoId })
+}
+
+// ---------- Fotos de quejas ----------
+
+/** Ruta de una foto de queja: <hogar>/quejas/<queja>/<id>.jpg */
+export const complaintPhotoPath = (householdId: string, complaintId: string, id: string) => `${householdId}/quejas/${complaintId}/${id}.jpg`
+
+/**
+ * Sube las fotos y pone la queja por el turno anterior. La queja se crea
+ * de una vez con sus fotos; si algo falla, no quedan archivos sueltos.
+ */
+export async function fileComplaint(
+  householdId: string,
+  shiftId: string,
+  reason: string,
+  files: File[],
+  onUploaded?: (n: number) => void,
+): Promise<{ id: string; points: number }> {
+  const id = crypto.randomUUID()
+  const paths: string[] = []
+  try {
+    for (const f of files) {
+      const path = complaintPhotoPath(householdId, id, crypto.randomUUID())
+      await uploadTo(path, f)
+      paths.push(path)
+      onUploaded?.(paths.length)
+    }
+    const { data, error } = await supabase.rpc('file_complaint', { p_id: id, p_shift: shiftId, p_reason: reason, p_paths: paths })
+    if (error) throw error
+    return data as { id: string; points: number }
+  } catch (e) {
+    await discard(paths)
+    throw e
   }
-  if (data?.error) throw new Error(data.error)
+}
+
+/** Agrega una foto más a una queja ya puesta */
+export async function addComplaintPhoto(householdId: string, complaintId: string, file: File): Promise<void> {
+  const path = complaintPhotoPath(householdId, complaintId, crypto.randomUUID())
+  await uploadTo(path, file)
+  const { error } = await supabase.rpc('add_complaint_photo', { p_complaint: complaintId, p_path: path })
+  if (error) {
+    await discard([path])
+    throw error
+  }
+}
+
+/** Quita una foto de una queja (quien reclamó en plazo, o un admin) */
+export async function removeComplaintPhoto(photoId: string): Promise<void> {
+  await invokeFotos({ action: 'remove-complaint', id: photoId })
 }
 
 // Enlaces firmados en memoria para no pedirlos cada vez

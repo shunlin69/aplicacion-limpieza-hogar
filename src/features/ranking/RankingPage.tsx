@@ -24,7 +24,7 @@ export function RankingPage() {
   const [vista, setVista] = useState<Vista>('semana')
   const [week, setWeek] = useState(thisMonday)
   const [monthRef, setMonthRef] = useState(today) // cualquier día del mes que se mira
-  const { ledger, results, rewards, activity, loading, reload } = useScores(household)
+  const { ledger, results, rewards, activity, complaints, loading, reload } = useScores(household)
 
   // En el ranking aparecen quienes hacen turnos y quien tenga puntos (ej: dejó de participar)
   const ids = useMemo(() => {
@@ -35,8 +35,8 @@ export function RankingPage() {
 
   const wPeriod = weekPeriod(week)
   const mPeriod = monthPeriod(monthRef)
-  const weekRows = ranking(ids, ledger, results, wPeriod)
-  const monthRows = ranking(ids, ledger, results, mPeriod)
+  const weekRows = ranking(ids, ledger, results, wPeriod, complaints)
+  const monthRows = ranking(ids, ledger, results, mPeriod, complaints)
   const prevMonth = (d: string) => addDays(monthPeriod(d).from, -1)
   const nextMonth = (d: string) => addDays(monthPeriod(d).to, 1)
 
@@ -67,7 +67,7 @@ export function RankingPage() {
             <Podio rows={weekRows} members={members} />
             <TablaPosiciones rows={weekRows} members={members} meId={me?.id} />
           </div>
-          <p className="small muted" style={{ textAlign: 'center' }}>✓ a tiempo · ⏰ tarde · ✗ sin hacer · % cumplimiento · 🔥 racha</p>
+          <p className="small muted" style={{ textAlign: 'center' }}>✓ a tiempo · ⏰ tarde · ✗ sin hacer · % cumplimiento · 🔥 racha · 📣 quejas</p>
         </>
       ) : vista === 'mes' ? (
         <>

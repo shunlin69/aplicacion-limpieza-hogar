@@ -93,7 +93,7 @@ describe('premios', () => {
 })
 
 describe('campeones y premios alcanzados', () => {
-  const row = (memberId: string, points: number, position: number) => ({ memberId, points, position, done: 0, late: 0, missed: 0, compliance: null, streak: 0 })
+  const row = (memberId: string, points: number, position: number) => ({ memberId, points, position, done: 0, late: 0, missed: 0, compliance: null, streak: 0, complaints: 0 })
   it('primer lugar con puntos; empate da dos campeones', () => {
     expect(champions([row('a', 40, 1), row('b', 40, 1), row('c', 20, 3)]).map((r) => r.memberId)).toEqual(['a', 'b'])
   })

@@ -4,7 +4,8 @@ import { addDays, isoWeekday, WEEKDAY_NAMES, type LocalDate } from '../../core/d
 import type { Activity } from '../../hooks/useScores'
 import type { Member } from '../../lib/supabase'
 import { Avatar } from '../../ui/Avatar'
-import { useShiftPhotos } from '../../lib/fotos'
+import { removeComplaintPhoto, useShiftPhotos } from '../../lib/fotos'
+import { useQuejas } from '../../hooks/useQuejas'
 import { BotonFotos } from '../fotos/FotosTurno'
 
 const fmtDay = (d: string) => new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
@@ -25,6 +26,9 @@ export function Historial({ members, ledger, results, activity, thisMonday, time
   // Fotos de respaldo de los turnos terminados que aparecen en el historial
   const turnoDe = (a: Activity) => (['turno_hecho', 'turno_tarde'].includes(a.verb) && typeof a.payload.turno === 'string' ? a.payload.turno : null)
   const fotos = useShiftPhotos(members[0]?.household_id, [...new Set(activity.flatMap((a) => turnoDe(a) ?? []))])
+  // Fotos de evidencia de las quejas
+  const { quejas } = useQuejas(members[0]?.household_id)
+  const quejaDe = (a: Activity) => (a.verb === 'queja' ? quejas.find((q) => q.id === a.payload.queja) : undefined)
 
   // Resumen de la semana pasada
   const lastMonday = addDays(thisMonday, -7)
@@ -52,6 +56,12 @@ export function Historial({ members, ledger, results, activity, thisMonday, time
       case 'cambio_aprobado': return { icon: '👍', msg: `${byUser(a.actorUserId)} aprobó el cambio entre ${byMember(p.integrante)} y ${byMember(p.otro)}` }
       case 'cambio_no_aprobado': return { icon: '⛔', msg: `${byUser(a.actorUserId)} no aprobó el cambio entre ${byMember(p.integrante)} y ${byMember(p.otro)}` }
       case 'cambio_cancelado': return { icon: '✖️', msg: `${byMember(p.integrante)} canceló su pedido de cambio` }
+      case 'queja': return { icon: '📣', msg: `${byMember(p.autor)} reclamó por el turno del ${dayName(p.fecha)} de ${byMember(p.integrante)}${pts}${quejaDe(a) ? `: “${quejaDe(a)?.reason}”` : ''}` }
+      case 'queja_aceptada': return { icon: '👍', msg: `${byMember(p.integrante)} aceptó la queja por su turno del ${dayName(p.fecha)}` }
+      case 'queja_revision': return { icon: '🧐', msg: `${byMember(p.integrante)} pidió revisar la queja por su turno del ${dayName(p.fecha)}` }
+      case 'queja_confirmada': return { icon: '⚖️', msg: `${byUser(a.actorUserId)} mantuvo la queja por el turno del ${dayName(p.fecha)} de ${byMember(p.integrante)}` }
+      case 'queja_anulada': return { icon: '⚖️', msg: `${byUser(a.actorUserId)} anuló la queja por el turno del ${dayName(p.fecha)} de ${byMember(p.integrante)}${pts}` }
+      case 'queja_retirada': return { icon: '↩️', msg: `${byMember(p.autor)} retiró su queja por el turno del ${dayName(p.fecha)} de ${byMember(p.integrante)}${pts}` }
       default: return { icon: '•', msg: a.verb }
     }
   }
@@ -106,6 +116,10 @@ export function Historial({ members, ledger, results, activity, thisMonday, time
                     {(() => {
                       const id = turnoDe(a)
                       return id && fotos.photos[id] ? <BotonFotos photos={fotos.photos[id]} title={t.msg} /> : null
+                    })()}
+                    {(() => {
+                      const q = quejaDe(a)
+                      return q ? <BotonFotos photos={q.photos} title={t.msg} remove={removeComplaintPhoto} /> : null
                     })()}
                   </div>
                 </div>

@@ -55,9 +55,9 @@ En la misma tarjeta eliges **a qué hora te avisamos el día de tu turno**: 10:0
 
 | Pestaña | Para qué |
 | --- | --- |
-| **Hoy** | Si te toca, aparece tu lista de "limpio". Marca cada cosa con un toque y al final toca **¡Listo!** (suena y cae confeti 🎉). También ves tu próximo turno y las solicitudes de cambio. |
+| **Hoy** | Si te toca, aparece tu lista de "limpio". Marca cada cosa con un toque y al final toca **¡Listo!** (suena y cae confeti 🎉). También ves tu próximo turno, las solicitudes de cambio y las quejas. |
 | **Semana** | Quién limpia cada día, quién descansa, el avance en vivo de quien está limpiando, ausencias y turnos que se deben. |
-| **Ranking** | Puntos de la semana y del mes, % de cumplimiento, rachas 🔥, premios del mes e historial de todo lo que pasó. |
+| **Ranking** | Puntos de la semana y del mes, % de cumplimiento, rachas 🔥, quejas 📣, premios del mes e historial de todo lo que pasó. |
 | **Tareas** | Los espacios (Cocina, Baño, Living, Comedor), qué significa "limpio" en cada uno y qué días se limpia qué. |
 | **Ajustes** | Tu perfil (nombre, emoji, color), avisos, integrantes, invitaciones y rotación. |
 
@@ -67,6 +67,28 @@ En la misma tarjeta eliges **a qué hora te avisamos el día de tu turno**: 10:0
 galería) de cómo quedó. Puedes subir hasta **4 por turno**, mientras lo haces y hasta **24 horas**
 después de terminarlo. Las ven todos los del hogar tocando **📷** en Semana, en Hoy o en el
 Historial. Si el admin la dejó **obligatoria**, el botón ¡Listo! espera a que haya al menos una.
+
+### Poner una queja por la limpieza anterior 📣
+
+Si al empezar tu turno encuentras que el turno anterior quedó mal hecho:
+
+1. En tu turno (Hoy) aparece **"Turno anterior: miércoles, Ana"** con el botón **📣 Poner una queja**.
+   Ahí mismo puedes ver con **📷** las fotos de respaldo que dejó esa persona.
+2. Saca o elige de **1 a 6 fotos** de cómo lo encontraste y escribe en pocas palabras qué quedó mal.
+3. Toca **Enviar queja**: a quien hizo ese turno se le resta al instante **la mitad de los puntos
+   del turno** y le llega un aviso.
+
+Se puede reclamar mientras haces tu turno y hasta **24 horas después de terminarlo**, solo por el
+turno inmediatamente anterior de la casa, y solo si ese turno se terminó (uno "no hecho" ya restó
+sus puntos). En esas 24 horas puedes **agregar más fotos** o **retirar la queja** si fue un error
+(se devuelven los puntos).
+
+Quien recibe la queja la ve en **Hoy**, con las fotos de la queja y sus propias fotos de respaldo,
+y tiene **3 días** para responder:
+
+- **Tiene razón**: la queja queda confirmada.
+- **Pedir revisión**: escribe su versión y **un admin decide**: **Mantener** o **Anular y devolver
+  los puntos**. Si el admin es parte de la queja, la decide el otro admin.
 
 ### Pedir un cambio de turno
 
@@ -116,12 +138,16 @@ dificultad y minutos en **Tareas**; los turnos ya repartidos guardan su valor or
 | Hecho el mismo día | Completos |
 | Hecho después, antes del siguiente turno de la casa | La mitad (redondeada hacia arriba) |
 | Llega el siguiente turno de la casa y sigue pendiente | **Se resta** la mitad |
+| Quien hizo el turno siguiente pone una **queja** con fotos | **Se resta** la mitad (se devuelve si un admin la anula o se retira) |
 
 Ejemplo: el turno del lunes se puede terminar tarde hasta el martes. El miércoles queda "No hecho".
 Un viernes atrasado se puede terminar hasta el domingo.
 
 - **Cumplimiento %**: a tiempo = 100 %, tarde = 50 %, no hecho = 0 %.
 - **Racha 🔥**: turnos seguidos hechos a tiempo.
+- **Quejas 📣**: cuántas quejas recibió cada uno en el período (las que siguen en pie). Sus puntos
+  ya están restados en el total y cuentan en la semana del turno reclamado.
+  Ejemplo: una queja por el turno del miércoles (19 pts) le resta 10: quien lo hizo queda con 9.
 - Los puntos cuentan en la semana **del turno**, no en la semana en que se registraron.
 - **Premios**: metas mensuales que define un admin (ej: "Elegir la película" por 30 pts).
   Se ganan al juntar esos puntos dentro del mes; el día 1 se parte de cero.
@@ -162,6 +188,9 @@ Los admins (en esta casa, los padres) **no hacen turnos** salvo que se marquen c
 ### Tareas habituales
 
 - **Aprobar cambios de turno**: aparecen arriba en **Hoy**.
+- **Revisar quejas**: cuando alguien pide revisión aparece en **Hoy** con las fotos de la queja,
+  las fotos de respaldo y las dos versiones. **Mantener** deja la resta; **Anular** devuelve los puntos.
+  Las quejas recién puestas también se ven ahí por 3 días, por si hay que anular alguna.
 - **Semana no disponible**: Ajustes → Rotación. Si la semana ya estaba repartida, se recalcula
   sola sin tocar turnos ya hechos, pasados o intercambiados.
 - **Premios**: Ranking → Mes → Agregar premio.
@@ -185,7 +214,7 @@ Los admins (en esta casa, los padres) **no hacen turnos** salvo que se marquen c
 ```bash
 npm install
 npm run dev        # http://localhost:5173 (usa el proyecto Supabase real)
-npm test           # 74 pruebas automáticas (Vitest)
+npm test           # 99 pruebas automáticas (Vitest)
 npm run build      # revisa tipos y compila a dist/
 npx oxlint src     # revisión de estilo
 ```
@@ -219,9 +248,9 @@ VITE_SUPABASE_KEY=sb_publishable_...
 
 `src/core/*.test.ts` cubre: rotación (incluye semanas no disponibles, deudas, más turnos que
 personas), fechas con cambio de horario de Chile, frecuencias, peso y puntos de los turnos,
-plazos de atraso y puntos por estado, ranking, empates y premios.
+plazos de atraso y puntos por estado, ranking, empates, premios y las reglas de las quejas.
 
-Las reglas del servidor (completar turnos, intercambios, permisos) se probaron con SQL
+Las reglas del servidor (completar turnos, intercambios, quejas, permisos) se probaron con SQL
 cambiando de usuario dentro de la base de datos.
 
 ### Publicar
@@ -291,11 +320,15 @@ iPhone (PWA)  ──▶  Supabase
   Marcar, completar, intercambiar y aprobar son funciones que validan quién eres, si el turno
   es tuyo, si está en plazo y si eres admin.
 - **Puntos** en un libro que solo crece (`points_ledger`); deshacer agrega la resta, no borra.
-- **Historial** (`activity_log`) de todo: sorteos, repartos, turnos, cambios.
+- **Historial** (`activity_log`) de todo: sorteos, repartos, turnos, cambios, quejas.
 - **Fotos** en el bucket privado `fotos-turnos` (ruta `hogar/turno/foto.jpg`): solo se ven con
   enlaces firmados de 1 hora y solo las ve el hogar. Se achican en el celular a 1600 px (~100–300 KB)
   antes de subir. Subir o quitar solo se permite en tu propio turno abierto o hasta 24 h después; quitar lo hace
   la Edge Function `fotos` (la base decide el permiso con la sesión de quien pide).
+- **Quejas** (`complaints` y `complaint_photos`): se crean con `file_complaint`, que revisa que sea el
+  turno anterior al tuyo, que estés en plazo y que las fotos ya estén subidas (en
+  `hogar/quejas/queja/foto.jpg`), y resta los puntos en el mismo paso. Responder, decidir y retirar
+  también son funciones validadas; devolver puntos agrega la suma al libro, no borra.
 - **Fechas** como días locales `YYYY-MM-DD` con la zona `America/Santiago`; los cambios de
   horario de Chile no corren los días.
 - **Avisos** en `notification_log` con llave única (nunca se repiten) y reserva previa para

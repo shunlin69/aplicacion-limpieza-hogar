@@ -595,3 +595,20 @@ select.input { appearance: none; }
 .visor-img img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; animation: fade-in .25s both; }
 .visor-bottom { display: flex; justify-content: center; align-items: center; gap: 24px; }
 .visor-remove { align-self: center; margin-top: 8px; color: #f3b7a8; }
+
+/* ---------- Quejas ---------- */
+.queja-prev {
+  padding: 12px; border-radius: 18px; text-align: left; width: 100%;
+  background: color-mix(in srgb, var(--peach) 30%, var(--surface-2)); border: 1px solid color-mix(in srgb, var(--peach) 55%, var(--border));
+}
+.queja-card { border-color: var(--peach); }
+.queja-prev .foto-chip { background: var(--surface); }
+.queja-pts { font-weight: 900; color: var(--danger); white-space: nowrap; }
+textarea.input { font: inherit; font-size: 17px; min-height: 0; resize: vertical; line-height: 1.35; }
+.btn-queja { background: var(--surface); color: var(--text); border: 2px solid color-mix(in srgb, var(--peach) 70%, var(--border)); }
+.foto-elegida { position: relative; cursor: default; }
+.foto-quitar {
+  position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(28, 24, 20, .65); color: #faf5ec; font-size: 13px; display: grid; place-items: center; padding: 0;
+}
+.foto-cargando { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(250, 245, 236, .55); }

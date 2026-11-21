@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fitSize, photoPath } from './fotos'
+import { complaintPhotoPath, fitSize, photoPath } from './fotos'
 
 describe('fotos de respaldo', () => {
   it('achica la foto manteniendo la proporción', () => {
@@ -17,5 +17,9 @@ describe('fotos de respaldo', () => {
 
   it('guarda cada foto en la carpeta de su hogar y su turno', () => {
     expect(photoPath('h1', 't1', 'f1')).toBe('h1/t1/f1.jpg')
+  })
+
+  it('las fotos de una queja van en la carpeta quejas de su hogar', () => {
+    expect(complaintPhotoPath('h1', 'q1', 'f1')).toBe('h1/quejas/q1/f1.jpg')
   })
 })
