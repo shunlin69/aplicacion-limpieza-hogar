@@ -107,16 +107,19 @@ export function FotosTurno({ shiftId, photos, canEdit, required, onChanged }: Pr
   )
 }
 
-/** Botón chico "📷 2" que abre el visor (para Semana e Historial) */
-export function BotonFotos({ photos, title }: { photos: ShiftPhoto[]; title?: string }) {
+/**
+ * Botón chico "📷 2" que abre el visor (para Semana, Historial y quejas).
+ * Un admin puede quitar fotos desde el visor; `remove` dice cómo (fotos de turno por defecto).
+ */
+export function BotonFotos({ photos, title, label, remove = removeShiftPhoto }: { photos: ShiftPhoto[]; title?: string; label?: string; remove?: (id: string) => Promise<void> }) {
   const { household, members, isAdmin } = useApp()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   if (!photos.length || !household) return null
   return (
     <>
-      <button className="badge foto-chip" onClick={() => setOpen(true)} aria-label={`Ver ${photos.length} fotos`}>
-        📷 {photos.length}
+      <button className="badge foto-chip" onClick={() => setOpen(true)} aria-label={`Ver ${photos.length} fotos${label ? ` ${label}` : ''}`}>
+        📷 {photos.length}{label ? ` ${label}` : ''}
       </button>
       {error && <span className="small status-missed">{error}</span>}
       {open && (
@@ -129,7 +132,7 @@ export function BotonFotos({ photos, title }: { photos: ShiftPhoto[]; title?: st
           onRemove={
             isAdmin
               ? (p) =>
-                  void removeShiftPhoto(p.id).catch((e) => {
+                  void remove(p.id).catch((e) => {
                     setError(mensajeError(e))
                   })
               : undefined

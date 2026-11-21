@@ -8,6 +8,7 @@
 // =============================================================
 import { addDays, type LocalDate } from './dates.ts'
 import type { ShiftStatus } from './completion.ts'
+import { complaintCounts, type ComplaintEntry } from './quejas.ts'
 
 export interface LedgerEntry {
   memberId: string
@@ -36,6 +37,7 @@ export interface RankRow {
   /** % de cumplimiento: a tiempo = 100 %, tarde = 50 %, no hecho = 0 %. null si no tuvo turnos cerrados */
   compliance: number | null
   streak: number // turnos seguidos a tiempo (hasta hoy)
+  complaints: number // quejas recibidas que siguen en pie (sus puntos ya están restados)
 }
 
 export const inPeriod = (d: LocalDate, p: Period) => d >= p.from && d <= p.to
@@ -72,11 +74,16 @@ export function streak(results: ShiftResult[], memberId: string): number {
   return n
 }
 
+/** Quejas que siguen en pie contra alguien en un período (por fecha del turno reclamado) */
+export function complaintsAgainst(memberId: string, complaints: ComplaintEntry[], period: Period): number {
+  return complaints.filter((c) => c.memberId === memberId && complaintCounts(c.status) && inPeriod(c.date, period)).length
+}
+
 /**
  * Tabla de posiciones del período. Orden: más puntos; si empatan, mejor
  * cumplimiento; si siguen empatados comparten el puesto.
  */
-export function ranking(memberIds: string[], ledger: LedgerEntry[], shifts: ShiftResult[], period: Period): RankRow[] {
+export function ranking(memberIds: string[], ledger: LedgerEntry[], shifts: ShiftResult[], period: Period, complaints: ComplaintEntry[] = []): RankRow[] {
   const rows = memberIds.map((id) => {
     const statuses = shifts.filter((s) => s.memberId === id && inPeriod(s.date, period)).map((s) => s.status)
     return {
@@ -88,6 +95,7 @@ export function ranking(memberIds: string[], ledger: LedgerEntry[], shifts: Shif
       missed: statuses.filter((s) => s === 'missed').length,
       compliance: compliance(statuses),
       streak: streak(shifts, id),
+      complaints: complaintsAgainst(id, complaints, period),
     }
   })
   const key = (r: RankRow) => [r.points, r.compliance ?? -1] as const

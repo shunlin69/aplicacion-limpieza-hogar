@@ -24,6 +24,7 @@ export function TablaPosiciones({ rows, members, meId }: { rows: RankRow[]; memb
                 {r.missed > 0 && <span>✗ {r.missed}</span>}
                 {r.compliance !== null && <span>{r.compliance}%</span>}
                 {r.streak >= 2 && <span>🔥 {r.streak}</span>}
+                {r.complaints > 0 && <span title="Quejas recibidas (ya restadas de los puntos)">📣 {r.complaints}</span>}
               </div>
             </div>
             <span className={`rank-points${r.points < 0 ? ' neg' : ''}`}>{r.points}</span>

@@ -13,6 +13,9 @@ import { Celebracion } from '../../ui/Celebracion'
 import { Escena, escenaDeTurno } from '../../ui/Escena'
 import type { ShiftPhoto } from '../../lib/fotos'
 import { FotosTurno } from '../fotos/FotosTurno'
+import { complaintWindowOpen } from '../../core/quejas'
+import type { Queja } from '../../hooks/useQuejas'
+import { QuejaAnterior } from '../quejas/QuejaAnterior'
 
 /** Premios del mes que se alcanzaron justo con estos puntos */
 async function premiosRecienGanados(householdId: string, memberId: string, date: LocalDate, tz: string, gained: number): Promise<Reward[]> {
@@ -42,11 +45,13 @@ interface Props {
   today: LocalDate
   cutoff: LocalDate
   photos: ShiftPhoto[]
+  quejas: Queja[]
   onChanged: () => Promise<void> | void
   onPhotosChanged: () => Promise<void> | void
+  onQuejasChanged: () => Promise<void> | void
 }
 
-export function TurnoActivo({ shift, checked, today, cutoff, photos, onChanged, onPhotosChanged }: Props) {
+export function TurnoActivo({ shift, checked, today, cutoff, photos, quejas, onChanged, onPhotosChanged, onQuejasChanged }: Props) {
   // Cambios del usuario aún no confirmados por el servidor (respuesta instantánea)
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
@@ -143,6 +148,16 @@ export function TurnoActivo({ shift, checked, today, cutoff, photos, onChanged, 
     <FotosTurno shiftId={shift.id} photos={photos} canEdit={photosOpen} required={!!household?.require_photo} onChanged={onPhotosChanged} />
   )
 
+  // Queja por el turno anterior: mientras hago el mío o hasta 24 horas después de terminarlo
+  const queja = shift.id && (
+    <QuejaAnterior
+      myShiftDate={shift.date}
+      windowOpen={complaintWindowOpen(shift.status, phase, shift.completedAt, new Date())}
+      quejas={quejas}
+      onChanged={onQuejasChanged}
+    />
+  )
+
   const canUndo = closed && shift.status !== 'missed' && !!shift.completedAt && Date.now() - new Date(shift.completedAt).getTime() < UNDO_MINUTES * 60_000
 
   if (closed) {
@@ -168,6 +183,7 @@ export function TurnoActivo({ shift, checked, today, cutoff, photos, onChanged, 
             </>
           )}
           {fotos}
+          {queja}
           {canUndo && (
             <button className="btn btn-ghost btn-small" onClick={undo} disabled={busy}>
               Me equivoqué, deshacer
@@ -194,6 +210,8 @@ export function TurnoActivo({ shift, checked, today, cutoff, photos, onChanged, 
           la mitad ({halfPoints(shift.points)} pts). Si no, se restan {halfPoints(shift.points)}.
         </div>
       )}
+
+      {queja}
 
       <div className="stack" style={{ gap: 6 }}>
         <div className="row-between small">

@@ -48,7 +48,7 @@ export function VisorFotos({ photos, start = 0, members, timeZone, title, onClos
       className="visor"
       role="dialog"
       aria-modal="true"
-      aria-label="Fotos del turno"
+      aria-label={title ?? 'Fotos'}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
       onTouchEnd={(e) => {
@@ -71,7 +71,7 @@ export function VisorFotos({ photos, start = 0, members, timeZone, title, onClos
         </button>
       </div>
       <div className="visor-img" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        {urls[p.path] ? <img key={p.id} src={urls[p.path]} alt={`Foto de respaldo ${i + 1} de ${photos.length}`} /> : <div className="spinner" />}
+        {urls[p.path] ? <img key={p.id} src={urls[p.path]} alt={`Foto ${i + 1} de ${photos.length}`} /> : <div className="spinner" />}
       </div>
       <div className="visor-bottom">
         <button className="visor-nav" disabled={i === 0} onClick={() => setI(i - 1)} aria-label="Foto anterior">

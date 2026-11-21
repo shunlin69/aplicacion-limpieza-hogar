@@ -11,6 +11,8 @@ import { BotonCambio } from '../cambios/BotonCambio'
 import { SolicitudesCard } from '../cambios/SolicitudesCard'
 import { useShiftPhotos } from '../../lib/fotos'
 import { BotonFotos } from '../fotos/FotosTurno'
+import { useQuejas } from '../../hooks/useQuejas'
+import { QuejasCard } from '../quejas/QuejasCard'
 
 const saludo = (h: number) => (h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches')
 const fmtLong = (d: string) => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))
@@ -35,6 +37,7 @@ export function HoyPage() {
   const loading = thisWeek.loading || nextWeek.loading
   const { swaps, reload: reloadSwaps } = useSwaps(household)
   const fotos = useShiftPhotos(household?.id, thisWeek.shifts.flatMap((s) => (s.id ? [s.id] : [])))
+  const { quejas, reload: reloadQuejas } = useQuejas(household?.id)
   const refreshAll = () => {
     void reloadSwaps()
     void thisWeek.reload()
@@ -54,6 +57,7 @@ export function HoyPage() {
       </div>
 
       {me && <SolicitudesCard swaps={swaps} members={members} me={me} onChanged={refreshAll} />}
+      {me && <QuejasCard quejas={quejas} members={members} me={me} hideShiftIds={mineToday.flatMap((s) => (s.id ? [s.id] : []))} onChanged={reloadQuejas} />}
 
       {!household?.rotation_start ? (
         <div className="card card-hero stack">
@@ -76,8 +80,10 @@ export function HoyPage() {
                 today={today}
                 cutoff={thisWeek.cutoffOf(s.date)}
                 photos={(s.id && fotos.photos[s.id]) || []}
+                quejas={quejas}
                 onChanged={thisWeek.reload}
                 onPhotosChanged={fotos.reload}
+                onQuejasChanged={reloadQuejas}
               />
             ))
           ) : me?.participates ? (
